@@ -1,5 +1,6 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
+import { useAuth } from "@/auth/AuthContext";
 import { cn } from "@/lib/utils";
 
 type NavigationItem = {
@@ -14,6 +15,14 @@ const navigationItems: NavigationItem[] = [
 ];
 
 export function AppLayout() {
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logout();
+    navigate("/login", { replace: true });
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r bg-card px-5 py-6 lg:block">
@@ -44,6 +53,20 @@ export function AppLayout() {
             </NavLink>
           ))}
         </nav>
+
+        <div className="absolute inset-x-5 bottom-6 rounded-lg border bg-background p-4">
+          <p className="text-sm font-medium text-foreground">{user?.name}</p>
+          <p className="mt-1 truncate text-xs text-muted-foreground">
+            {user?.email}
+          </p>
+          <button
+            className="mt-3 w-full rounded-md border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            type="button"
+            onClick={handleLogout}
+          >
+            Выйти
+          </button>
+        </div>
       </aside>
 
       <div className="lg:pl-64">
@@ -75,6 +98,13 @@ export function AppLayout() {
                   {item.label}
                 </NavLink>
               ))}
+              <button
+                className="rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground"
+                type="button"
+                onClick={handleLogout}
+              >
+                Выйти
+              </button>
             </nav>
           </div>
         </header>
