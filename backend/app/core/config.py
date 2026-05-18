@@ -10,8 +10,14 @@ class Settings(BaseSettings):
         default="postgresql+psycopg://tripflow:tripflow_local_password@localhost:5432/tripflow",
         validation_alias="DATABASE_URL",
     )
+    jwt_secret_key: str = Field(
+        default="tripflow-local-dev-secret-change-me",
+        validation_alias="JWT_SECRET_KEY",
+    )
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24 * 7
     backend_cors_origins: str = Field(
-        default="http://localhost:5173",
+        default="http://localhost:5173,http://127.0.0.1:5173",
         validation_alias="BACKEND_CORS_ORIGINS",
     )
 
