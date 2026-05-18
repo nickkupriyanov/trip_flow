@@ -14,6 +14,64 @@ export type AuthResponse = {
   user: User;
 };
 
+export type Client = {
+  id: string;
+  userId: string;
+  fullName: string;
+  phone: string | null;
+  email: string | null;
+  telegram: string | null;
+  whatsapp: string | null;
+  city: string | null;
+  source: string | null;
+  tags: string[];
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ClientInput = {
+  fullName: string;
+  phone?: string | null;
+  email?: string | null;
+  telegram?: string | null;
+  whatsapp?: string | null;
+  city?: string | null;
+  source?: string | null;
+  tags?: string[];
+  notes?: string | null;
+};
+
+export type HotelLevel = "3*" | "4*" | "5*" | "luxury";
+
+export type ClientPreference = {
+  id: string;
+  clientId: string;
+  preferredDestinations: string[];
+  dislikedDestinations: string[];
+  preferredHotelLevel: HotelLevel | null;
+  mealPreferences: string[];
+  travelStyle: string[];
+  importantFactors: string[];
+  avoidFactors: string[];
+  averageBudgetMin: number | null;
+  averageBudgetMax: number | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ClientPreferenceInput = {
+  preferredDestinations?: string[];
+  dislikedDestinations?: string[];
+  preferredHotelLevel?: HotelLevel | null;
+  mealPreferences?: string[];
+  travelStyle?: string[];
+  importantFactors?: string[];
+  avoidFactors?: string[];
+  averageBudgetMin?: number | null;
+  averageBudgetMax?: number | null;
+};
+
 type ApiErrorBody = {
   detail?: string;
 };
@@ -60,6 +118,10 @@ export async function apiRequest<T>(
     throw new ApiError(await parseError(response), response.status);
   }
 
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return (await response.json()) as T;
 }
 
@@ -86,4 +148,76 @@ export function loginUser(payload: {
 
 export function fetchCurrentUser(token: string): Promise<User> {
   return apiRequest<User>("/auth/me", {}, token);
+}
+
+export function fetchClients(token: string, search?: string): Promise<Client[]> {
+  const params = new URLSearchParams();
+  if (search?.trim()) {
+    params.set("search", search.trim());
+  }
+  const query = params.toString();
+  return apiRequest<Client[]>(`/clients${query ? `?${query}` : ""}`, {}, token);
+}
+
+export function createClient(
+  token: string,
+  payload: ClientInput,
+): Promise<Client> {
+  return apiRequest<Client>(
+    "/clients",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
+}
+
+export function fetchClient(token: string, clientId: string): Promise<Client> {
+  return apiRequest<Client>(`/clients/${clientId}`, {}, token);
+}
+
+export function updateClient(
+  token: string,
+  clientId: string,
+  payload: Partial<ClientInput>,
+): Promise<Client> {
+  return apiRequest<Client>(
+    `/clients/${clientId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
+}
+
+export function deleteClient(token: string, clientId: string): Promise<void> {
+  return apiRequest<void>(`/clients/${clientId}`, { method: "DELETE" }, token);
+}
+
+export function fetchClientPreferences(
+  token: string,
+  clientId: string,
+): Promise<ClientPreference | null> {
+  return apiRequest<ClientPreference | null>(
+    `/clients/${clientId}/preferences`,
+    {},
+    token,
+  );
+}
+
+export function upsertClientPreferences(
+  token: string,
+  clientId: string,
+  payload: ClientPreferenceInput,
+): Promise<ClientPreference> {
+  return apiRequest<ClientPreference>(
+    `/clients/${clientId}/preferences`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
 }
