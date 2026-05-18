@@ -8,18 +8,25 @@ import { z } from "zod";
 import { useAuth } from "@/auth/AuthContext";
 import {
   ApiError,
+  createTravelRequest,
   deleteClient,
   fetchClient,
   fetchClientPreferences,
+  fetchClientRequests,
   updateClient,
   upsertClientPreferences,
   type Client,
   type ClientInput,
   type ClientPreference,
   type ClientPreferenceInput,
-  type HotelLevel
+  type HotelLevel,
+  type TravelRequest,
+  type TravelRequestInput,
+  type TravelRequestStatus
 } from "@/lib/api";
 import { ClientForm } from "@/pages/components/ClientForm";
+import { EmptyState } from "@/pages/components/EmptyState";
+import { TravelRequestForm } from "@/pages/components/TravelRequestForm";
 
 const preferenceSchema = z.object({
   preferredDestinationsText: z.string().optional(),
@@ -205,6 +212,8 @@ export function ClientDetailPage() {
         preferences={preferencesQuery.data ?? null}
         token={token!}
       />
+
+      <RequestsPanel clientId={client.id} token={token!} />
     </section>
   );
 }
@@ -427,6 +436,157 @@ function PreferencePanel({
       ) : null}
     </div>
   );
+}
+
+const requestStatusLabels: Record<TravelRequestStatus, string> = {
+  new: "Новая",
+  clarifying: "Уточнение",
+  searching: "Подбор",
+  sent: "Отправлено",
+  thinking: "Клиент думает",
+  booked: "Бронь",
+  rejected: "Отказ"
+};
+
+function RequestsPanel({ clientId, token }: { clientId: string; token: string }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const requestsQuery = useQuery({
+    queryKey: ["client-requests", clientId],
+    queryFn: () => fetchClientRequests(token, clientId)
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (payload: TravelRequestInput) =>
+      createTravelRequest(token, clientId, payload),
+    onSuccess: async (request) => {
+      setFormError(null);
+      setIsCreateOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ["client-requests", clientId] });
+      navigate(`/requests/${request.id}`);
+    },
+    onError: (error) => setFormError(getErrorMessage(error))
+  });
+
+  async function handleCreate(payload: TravelRequestInput) {
+    await createMutation.mutateAsync(payload);
+  }
+
+  const requests = requestsQuery.data ?? [];
+
+  return (
+    <div className="rounded-lg border bg-card p-5 shadow-sm">
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Заявки на путешествия</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Конкретные поездки клиента: вводные, бюджет, даты и статус работы.
+          </p>
+        </div>
+        <button
+          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+          type="button"
+          onClick={() => {
+            setFormError(null);
+            setIsCreateOpen((value) => !value);
+          }}
+        >
+          {isCreateOpen ? "Скрыть форму" : "Создать заявку"}
+        </button>
+      </div>
+
+      {isCreateOpen ? (
+        <div className="mb-5 rounded-lg border bg-background p-4">
+          <TravelRequestForm
+            error={formError}
+            isSubmitting={createMutation.isPending}
+            submitLabel="Создать заявку"
+            onCancel={() => setIsCreateOpen(false)}
+            onSubmit={handleCreate}
+          />
+        </div>
+      ) : null}
+
+      {requestsQuery.isLoading ? (
+        <p className="text-sm text-muted-foreground">Загружаем заявки...</p>
+      ) : null}
+
+      {requestsQuery.isError ? (
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {getErrorMessage(requestsQuery.error)}
+        </div>
+      ) : null}
+
+      {!requestsQuery.isLoading && !requestsQuery.isError && requests.length === 0 ? (
+        <EmptyState
+          title="Заявок пока нет"
+          description="Создайте первую заявку, когда клиент описал направление, даты или бюджет поездки."
+        />
+      ) : null}
+
+      {requests.length > 0 ? (
+        <div className="grid gap-3">
+          {requests.map((request) => (
+            <RequestCard key={request.id} request={request} />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function RequestCard({ request }: { request: TravelRequest }) {
+  return (
+    <Link
+      className="block rounded-lg border bg-background p-4 transition hover:border-primary/40 hover:bg-muted/30"
+      to={`/requests/${request.id}`}
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h4 className="font-semibold">
+            {request.destination || "Заявка без направления"}
+          </h4>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {formatRequestMeta(request)}
+          </p>
+        </div>
+        <span className="w-fit rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+          {requestStatusLabels[request.status]}
+        </span>
+      </div>
+      {request.wishes ? (
+        <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
+          {request.wishes}
+        </p>
+      ) : null}
+    </Link>
+  );
+}
+
+function formatRequestMeta(request: TravelRequest): string {
+  const parts = [
+    request.departureCity,
+    formatDateRange(request.dateFrom, request.dateTo),
+    formatBudget(request.budgetMin, request.budgetMax)
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "Параметры поездки ещё не заполнены";
+}
+
+function formatDateRange(from: string | null, to: string | null): string | null {
+  if (from && to) {
+    return `${from} - ${to}`;
+  }
+  return from ?? to;
+}
+
+function formatBudget(min: number | null, max: number | null): string | null {
+  if (min && max) {
+    return `${min} - ${max}`;
+  }
+  return min?.toString() ?? max?.toString() ?? null;
 }
 
 function toPreferenceValues(

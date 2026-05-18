@@ -51,6 +51,10 @@ class Client(Base):
         cascade="all, delete-orphan",
         uselist=False,
     )
+    travel_requests: Mapped[list["TravelRequest"]] = relationship(
+        back_populates="client",
+        cascade="all, delete-orphan",
+    )
 
 
 class ClientPreference(Base):

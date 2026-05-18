@@ -72,6 +72,114 @@ export type ClientPreferenceInput = {
   averageBudgetMax?: number | null;
 };
 
+export type TravelRequestStatus =
+  | "new"
+  | "clarifying"
+  | "searching"
+  | "sent"
+  | "thinking"
+  | "booked"
+  | "rejected";
+
+export type TravelRequest = {
+  id: string;
+  userId: string;
+  clientId: string;
+  status: TravelRequestStatus;
+  destination: string | null;
+  departureCity: string | null;
+  dateFrom: string | null;
+  dateTo: string | null;
+  nightsFrom: number | null;
+  nightsTo: number | null;
+  adults: number;
+  children: number;
+  childrenAges: number[];
+  budgetMin: number | null;
+  budgetMax: number | null;
+  travelType: string | null;
+  wishes: string | null;
+  restrictions: string | null;
+  internalComment: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PipelineTravelRequest = TravelRequest & {
+  clientFullName: string;
+};
+
+export type Pipeline = Record<TravelRequestStatus, PipelineTravelRequest[]>;
+
+export type TravelRequestInput = {
+  status?: TravelRequestStatus;
+  destination?: string | null;
+  departureCity?: string | null;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+  nightsFrom?: number | null;
+  nightsTo?: number | null;
+  adults?: number;
+  children?: number;
+  childrenAges?: number[];
+  budgetMin?: number | null;
+  budgetMax?: number | null;
+  travelType?: string | null;
+  wishes?: string | null;
+  restrictions?: string | null;
+  internalComment?: string | null;
+};
+
+export type TravelRequestStatusInput = {
+  status: TravelRequestStatus;
+};
+
+export type Currency = "RUB" | "USD" | "EUR";
+
+export type TourOption = {
+  id: string;
+  requestId: string;
+  title: string;
+  country: string | null;
+  resort: string | null;
+  hotelName: string | null;
+  hotelStars: number | null;
+  dateFrom: string | null;
+  dateTo: string | null;
+  nights: number | null;
+  roomType: string | null;
+  mealType: string | null;
+  price: number | null;
+  currency: Currency;
+  link: string | null;
+  pros: string[];
+  cons: string[];
+  agentComment: string | null;
+  isRecommended: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TourOptionInput = {
+  title: string;
+  country?: string | null;
+  resort?: string | null;
+  hotelName?: string | null;
+  hotelStars?: number | null;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+  nights?: number | null;
+  roomType?: string | null;
+  mealType?: string | null;
+  price?: number | null;
+  currency?: Currency;
+  link?: string | null;
+  pros?: string[];
+  cons?: string[];
+  agentComment?: string | null;
+  isRecommended?: boolean;
+};
+
 type ApiErrorBody = {
   detail?: string;
 };
@@ -220,4 +328,123 @@ export function upsertClientPreferences(
     },
     token,
   );
+}
+
+export function fetchClientRequests(
+  token: string,
+  clientId: string,
+): Promise<TravelRequest[]> {
+  return apiRequest<TravelRequest[]>(
+    `/clients/${clientId}/requests`,
+    {},
+    token,
+  );
+}
+
+export function fetchTravelRequests(token: string): Promise<TravelRequest[]> {
+  return apiRequest<TravelRequest[]>("/requests", {}, token);
+}
+
+export function createTravelRequest(
+  token: string,
+  clientId: string,
+  payload: TravelRequestInput,
+): Promise<TravelRequest> {
+  return apiRequest<TravelRequest>(
+    `/clients/${clientId}/requests`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
+}
+
+export function fetchTravelRequest(
+  token: string,
+  requestId: string,
+): Promise<TravelRequest> {
+  return apiRequest<TravelRequest>(`/requests/${requestId}`, {}, token);
+}
+
+export function updateTravelRequest(
+  token: string,
+  requestId: string,
+  payload: Partial<TravelRequestInput>,
+): Promise<TravelRequest> {
+  return apiRequest<TravelRequest>(
+    `/requests/${requestId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
+}
+
+export function updateTravelRequestStatus(
+  token: string,
+  requestId: string,
+  payload: TravelRequestStatusInput,
+): Promise<TravelRequest> {
+  return apiRequest<TravelRequest>(
+    `/requests/${requestId}/status`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
+}
+
+export function fetchPipeline(token: string): Promise<Pipeline> {
+  return apiRequest<Pipeline>("/pipeline", {}, token);
+}
+
+export function deleteTravelRequest(
+  token: string,
+  requestId: string,
+): Promise<void> {
+  return apiRequest<void>(`/requests/${requestId}`, { method: "DELETE" }, token);
+}
+
+export function fetchTourOptions(
+  token: string,
+  requestId: string,
+): Promise<TourOption[]> {
+  return apiRequest<TourOption[]>(`/requests/${requestId}/options`, {}, token);
+}
+
+export function createTourOption(
+  token: string,
+  requestId: string,
+  payload: TourOptionInput,
+): Promise<TourOption> {
+  return apiRequest<TourOption>(
+    `/requests/${requestId}/options`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
+}
+
+export function updateTourOption(
+  token: string,
+  optionId: string,
+  payload: Partial<TourOptionInput>,
+): Promise<TourOption> {
+  return apiRequest<TourOption>(
+    `/options/${optionId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
+}
+
+export function deleteTourOption(token: string, optionId: string): Promise<void> {
+  return apiRequest<void>(`/options/${optionId}`, { method: "DELETE" }, token);
 }

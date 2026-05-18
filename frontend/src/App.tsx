@@ -7,6 +7,7 @@ import { ClientDetailPage } from "@/pages/ClientDetailPage";
 import { ClientsPage } from "@/pages/ClientsPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { PipelinePage } from "@/pages/PipelinePage";
+import { TravelRequestDetailPage } from "@/pages/TravelRequestDetailPage";
 
 const router = createBrowserRouter([
   { path: "/login", element: <AuthPage mode="login" /> },
@@ -22,7 +23,8 @@ const router = createBrowserRouter([
           { path: "dashboard", element: <DashboardPage /> },
           { path: "pipeline", element: <PipelinePage /> },
           { path: "clients", element: <ClientsPage /> },
-          { path: "clients/:clientId", element: <ClientDetailPage /> }
+          { path: "clients/:clientId", element: <ClientDetailPage /> },
+          { path: "requests/:requestId", element: <TravelRequestDetailPage /> }
         ]
       }
     ]
