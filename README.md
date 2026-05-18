@@ -69,6 +69,82 @@ Infrastructure:
 - Docker Compose;
 - environment variables for secrets.
 
+## Быстрый старт через Docker Compose
+
+Скопируйте пример переменных окружения:
+
+```bash
+cp .env.example .env
+```
+
+Запустите локальный стек:
+
+```bash
+docker compose up --build
+```
+
+После запуска:
+
+- frontend: http://localhost:5173
+- backend health: http://localhost:8000/health
+- PostgreSQL: `localhost:5432`
+
+Остановить стек:
+
+```bash
+docker compose down
+```
+
+Остановить стек и удалить локальные данные PostgreSQL:
+
+```bash
+docker compose down -v
+```
+
+## Локальный запуск без Docker
+
+Backend:
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+Проверка backend:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend будет доступен на http://localhost:5173.
+
+## Команды проверки
+
+Frontend build:
+
+```bash
+cd frontend
+npm run build
+```
+
+Backend import check:
+
+```bash
+cd backend
+python -c "from app.main import app; print(app.title)"
+```
+
 ## Документация
 
 - [MVP](docs/MVP.md)
