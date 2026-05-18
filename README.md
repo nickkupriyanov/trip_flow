@@ -83,11 +83,19 @@ cp .env.example .env
 docker compose up --build
 ```
 
+Backend-контейнер автоматически применит миграции Alembic перед запуском API.
+
 После запуска:
 
 - frontend: http://localhost:5173
 - backend health: http://localhost:8000/health
 - PostgreSQL: `localhost:5432`
+
+Если нужно применить миграции вручную:
+
+```bash
+docker compose exec backend alembic upgrade head
+```
 
 Остановить стек:
 
@@ -110,6 +118,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
