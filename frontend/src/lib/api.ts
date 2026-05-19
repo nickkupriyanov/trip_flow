@@ -198,6 +198,23 @@ export type ProposalInput = {
   format?: ProposalFormat;
 };
 
+export type ProposalTone = "friendly" | "concise" | "premium";
+
+export type GenerateProposalInput = {
+  requestId: string;
+  selectedOptionIds?: string[];
+  tone?: ProposalTone;
+  format?: ProposalFormat;
+};
+
+export type GenerateProposalOutput = {
+  title: string;
+  message: string;
+  recommendedOptionId: string | null;
+  shortSummary: string;
+  generationTaskId: string;
+};
+
 type ApiErrorBody = {
   detail?: string;
 };
@@ -506,4 +523,18 @@ export function updateProposal(
 
 export function deleteProposal(token: string, proposalId: string): Promise<void> {
   return apiRequest<void>(`/proposals/${proposalId}`, { method: "DELETE" }, token);
+}
+
+export function generateProposalDraft(
+  token: string,
+  payload: GenerateProposalInput,
+): Promise<GenerateProposalOutput> {
+  return apiRequest<GenerateProposalOutput>(
+    "/ai/generate-proposal",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
 }

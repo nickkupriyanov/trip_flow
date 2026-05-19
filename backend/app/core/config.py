@@ -20,6 +20,15 @@ class Settings(BaseSettings):
         default="http://localhost:5173,http://127.0.0.1:5173",
         validation_alias="BACKEND_CORS_ORIGINS",
     )
+    timeweb_ai_agent_url: str | None = Field(
+        default=None,
+        validation_alias="TIMEWEB_AI_AGENT_URL",
+    )
+    timeweb_ai_api_token: str | None = Field(
+        default=None,
+        validation_alias="TIMEWEB_AI_API_TOKEN",
+    )
+    ai_model: str = Field(default="gpt-4o-mini", validation_alias="AI_MODEL")
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),
