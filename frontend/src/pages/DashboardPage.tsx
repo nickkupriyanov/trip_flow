@@ -2,9 +2,9 @@ import { EmptyState } from "@/pages/components/EmptyState";
 import { PageHeader } from "@/pages/components/PageHeader";
 
 const overviewCards = [
-  { label: "Напоминания на сегодня", value: "0", note: "Логика напоминаний появится позже" },
-  { label: "Новые заявки", value: "0", note: "Сначала будет добавлена авторизация" },
-  { label: "Предложения для follow-up", value: "0", note: "Демо-данных пока нет" }
+  { label: "Напоминания на сегодня", value: "0", note: "Откройте раздел напоминаний для текущего списка" },
+  { label: "Новые заявки", value: "0", note: "Будет подключено на этапе dashboard" },
+  { label: "Предложения для follow-up", value: "0", note: "Будет подключено на этапе dashboard" }
 ];
 
 export function DashboardPage() {
@@ -32,7 +32,7 @@ export function DashboardPage() {
 
       <EmptyState
         title="Ежедневная работа пока не подключена"
-        description="Данные появятся после реализации напоминаний, клиентов и заявок на путешествия."
+        description="Напоминания уже доступны в отдельном разделе. Следующий этап свяжет их с виджетами dashboard."
       />
     </section>
   );

@@ -6,6 +6,7 @@ from app.api.auth import router as auth_router
 from app.api.clients import router as clients_router
 from app.api.health import router as health_router
 from app.api.proposals import router as proposals_router
+from app.api.reminders import router as reminders_router
 from app.api.tour_options import router as tour_options_router
 from app.api.travel_requests import router as travel_requests_router
 from app.core.config import get_settings
@@ -30,6 +31,7 @@ def create_app() -> FastAPI:
     app.include_router(travel_requests_router)
     app.include_router(tour_options_router)
     app.include_router(proposals_router)
+    app.include_router(reminders_router)
     app.include_router(health_router)
 
     return app
