@@ -180,6 +180,24 @@ export type TourOptionInput = {
   isRecommended?: boolean;
 };
 
+export type ProposalFormat = "telegram" | "whatsapp" | "email";
+
+export type Proposal = {
+  id: string;
+  requestId: string;
+  title: string;
+  content: string;
+  format: ProposalFormat;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProposalInput = {
+  title: string;
+  content: string;
+  format?: ProposalFormat;
+};
+
 type ApiErrorBody = {
   detail?: string;
 };
@@ -447,4 +465,45 @@ export function updateTourOption(
 
 export function deleteTourOption(token: string, optionId: string): Promise<void> {
   return apiRequest<void>(`/options/${optionId}`, { method: "DELETE" }, token);
+}
+
+export function fetchProposals(
+  token: string,
+  requestId: string,
+): Promise<Proposal[]> {
+  return apiRequest<Proposal[]>(`/requests/${requestId}/proposals`, {}, token);
+}
+
+export function createProposal(
+  token: string,
+  requestId: string,
+  payload: ProposalInput,
+): Promise<Proposal> {
+  return apiRequest<Proposal>(
+    `/requests/${requestId}/proposals`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
+}
+
+export function updateProposal(
+  token: string,
+  proposalId: string,
+  payload: Partial<ProposalInput>,
+): Promise<Proposal> {
+  return apiRequest<Proposal>(
+    `/proposals/${proposalId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
+}
+
+export function deleteProposal(token: string, proposalId: string): Promise<void> {
+  return apiRequest<void>(`/proposals/${proposalId}`, { method: "DELETE" }, token);
 }

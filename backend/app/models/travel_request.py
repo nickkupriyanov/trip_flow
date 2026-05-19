@@ -64,3 +64,7 @@ class TravelRequest(Base):
         back_populates="request",
         cascade="all, delete-orphan",
     )
+    proposals: Mapped[list["Proposal"]] = relationship(
+        back_populates="request",
+        cascade="all, delete-orphan",
+    )
