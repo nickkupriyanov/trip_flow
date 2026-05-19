@@ -7,6 +7,7 @@ import { ClientDetailPage } from "@/pages/ClientDetailPage";
 import { ClientsPage } from "@/pages/ClientsPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { PipelinePage } from "@/pages/PipelinePage";
+import { RemindersPage } from "@/pages/RemindersPage";
 import { TravelRequestDetailPage } from "@/pages/TravelRequestDetailPage";
 
 const router = createBrowserRouter([
@@ -22,6 +23,7 @@ const router = createBrowserRouter([
           { index: true, element: <Navigate to="/dashboard" replace /> },
           { path: "dashboard", element: <DashboardPage /> },
           { path: "pipeline", element: <PipelinePage /> },
+          { path: "reminders", element: <RemindersPage /> },
           { path: "clients", element: <ClientsPage /> },
           { path: "clients/:clientId", element: <ClientDetailPage /> },
           { path: "requests/:requestId", element: <TravelRequestDetailPage /> }

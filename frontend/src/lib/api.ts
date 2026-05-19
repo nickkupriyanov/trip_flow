@@ -215,6 +215,38 @@ export type GenerateProposalOutput = {
   generationTaskId: string;
 };
 
+export type ReminderStatus = "active" | "done";
+
+export type Reminder = {
+  id: string;
+  userId: string;
+  clientId: string | null;
+  requestId: string | null;
+  title: string;
+  description: string | null;
+  dueAt: string;
+  status: ReminderStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReminderInput = {
+  clientId?: string | null;
+  requestId?: string | null;
+  title: string;
+  description?: string | null;
+  dueAt: string;
+  status?: ReminderStatus;
+};
+
+export type ReminderFilters = {
+  status?: ReminderStatus;
+  dueFrom?: string;
+  dueTo?: string;
+  clientId?: string;
+  requestId?: string;
+};
+
 type ApiErrorBody = {
   detail?: string;
 };
@@ -537,4 +569,72 @@ export function generateProposalDraft(
     },
     token,
   );
+}
+
+export function fetchReminders(
+  token: string,
+  filters: ReminderFilters = {},
+): Promise<Reminder[]> {
+  const params = new URLSearchParams();
+  if (filters.status) {
+    params.set("status", filters.status);
+  }
+  if (filters.dueFrom) {
+    params.set("due_from", filters.dueFrom);
+  }
+  if (filters.dueTo) {
+    params.set("due_to", filters.dueTo);
+  }
+  if (filters.clientId) {
+    params.set("client_id", filters.clientId);
+  }
+  if (filters.requestId) {
+    params.set("request_id", filters.requestId);
+  }
+  const query = params.toString();
+  return apiRequest<Reminder[]>(`/reminders${query ? `?${query}` : ""}`, {}, token);
+}
+
+export function createReminder(
+  token: string,
+  payload: ReminderInput,
+): Promise<Reminder> {
+  return apiRequest<Reminder>(
+    "/reminders",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
+}
+
+export function updateReminder(
+  token: string,
+  reminderId: string,
+  payload: Partial<ReminderInput>,
+): Promise<Reminder> {
+  return apiRequest<Reminder>(
+    `/reminders/${reminderId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
+}
+
+export function markReminderDone(
+  token: string,
+  reminderId: string,
+): Promise<Reminder> {
+  return apiRequest<Reminder>(
+    `/reminders/${reminderId}/done`,
+    { method: "PATCH" },
+    token,
+  );
+}
+
+export function deleteReminder(token: string, reminderId: string): Promise<void> {
+  return apiRequest<void>(`/reminders/${reminderId}`, { method: "DELETE" }, token);
 }

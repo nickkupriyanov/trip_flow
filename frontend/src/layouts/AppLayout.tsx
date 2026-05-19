@@ -11,6 +11,7 @@ type NavigationItem = {
 const navigationItems: NavigationItem[] = [
   { label: "Дашборд", to: "/dashboard" },
   { label: "Pipeline", to: "/pipeline" },
+  { label: "Напоминания", to: "/reminders" },
   { label: "Клиенты", to: "/clients" }
 ];
 

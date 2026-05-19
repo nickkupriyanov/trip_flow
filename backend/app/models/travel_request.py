@@ -68,3 +68,4 @@ class TravelRequest(Base):
         back_populates="request",
         cascade="all, delete-orphan",
     )
+    reminders: Mapped[list["Reminder"]] = relationship(back_populates="request")

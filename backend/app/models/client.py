@@ -55,6 +55,7 @@ class Client(Base):
         back_populates="client",
         cascade="all, delete-orphan",
     )
+    reminders: Mapped[list["Reminder"]] = relationship(back_populates="client")
 
 
 class ClientPreference(Base):
