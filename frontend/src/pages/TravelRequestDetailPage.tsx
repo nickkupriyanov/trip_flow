@@ -14,12 +14,15 @@ import {
   fetchProposals,
   fetchTourOptions,
   fetchTravelRequest,
+  generateProposalDraft,
   updateProposal,
   updateTourOption,
   updateTravelRequest,
+  type GenerateProposalOutput,
   type Proposal,
   type ProposalFormat,
   type ProposalInput,
+  type ProposalTone,
   type TourOption,
   type TourOptionInput,
   type TravelRequest,
@@ -580,6 +583,12 @@ const proposalFormatLabels: Record<ProposalFormat, string> = {
   email: "Email"
 };
 
+const proposalTones: Array<{ value: ProposalTone; label: string }> = [
+  { value: "friendly", label: "Дружелюбный" },
+  { value: "concise", label: "Короткий" },
+  { value: "premium", label: "Премиальный" }
+];
+
 type ProposalFormState = {
   title: string;
   content: string;
@@ -599,10 +608,23 @@ function ProposalsPanel({
   const [formError, setFormError] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const [isGenerateOpen, setIsGenerateOpen] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generationSummary, setGenerationSummary] = useState<string | null>(null);
+  const [draft, setDraft] = useState<ProposalFormState | null>(null);
+  const [generationTone, setGenerationTone] = useState<ProposalTone>("friendly");
+  const [generationFormat, setGenerationFormat] =
+    useState<ProposalFormat>("telegram");
+  const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
 
   const proposalsQuery = useQuery({
     queryKey: ["proposals", requestId],
     queryFn: () => fetchProposals(token, requestId)
+  });
+
+  const optionsQuery = useQuery({
+    queryKey: ["tour-options", requestId],
+    queryFn: () => fetchTourOptions(token, requestId)
   });
 
   const createMutation = useMutation({
@@ -610,6 +632,8 @@ function ProposalsPanel({
     onSuccess: async () => {
       setFormError(null);
       setCopyMessage(null);
+      setDraft(null);
+      setGenerationSummary(null);
       setIsCreateOpen(false);
       await queryClient.invalidateQueries({ queryKey: ["proposals", requestId] });
     },
@@ -643,6 +667,30 @@ function ProposalsPanel({
     onError: (error) => setMutationError(getErrorMessage(error))
   });
 
+  const generateMutation = useMutation({
+    mutationFn: () =>
+      generateProposalDraft(token, {
+        requestId,
+        selectedOptionIds,
+        tone: generationTone,
+        format: generationFormat
+      }),
+    onSuccess: (generated: GenerateProposalOutput) => {
+      setGenerationError(null);
+      setCopyMessage(null);
+      setFormError(null);
+      setEditingProposalId(null);
+      setDraft({
+        title: generated.title,
+        content: generated.message,
+        format: generationFormat
+      });
+      setGenerationSummary(generated.shortSummary);
+      setIsCreateOpen(true);
+    },
+    onError: (error) => setGenerationError(getErrorMessage(error))
+  });
+
   async function handleCreate(payload: ProposalInput) {
     await createMutation.mutateAsync(payload);
   }
@@ -667,7 +715,16 @@ function ProposalsPanel({
     }
   }
 
+  function toggleSelectedOption(optionId: string) {
+    setSelectedOptionIds((current) =>
+      current.includes(optionId)
+        ? current.filter((id) => id !== optionId)
+        : [...current, optionId],
+    );
+  }
+
   const proposals = proposalsQuery.data ?? [];
+  const options = optionsQuery.data ?? [];
 
   return (
     <div className="rounded-lg border bg-card p-5 shadow-sm">
@@ -678,25 +735,141 @@ function ProposalsPanel({
             Редактируемые тексты для отправки клиенту в Telegram или WhatsApp.
           </p>
         </div>
-        <button
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
-          type="button"
-          onClick={() => {
-            setFormError(null);
-            setCopyMessage(null);
-            setEditingProposalId(null);
-            setIsCreateOpen((value) => !value);
-          }}
-        >
-          {isCreateOpen ? "Скрыть форму" : "Создать предложение"}
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            className="rounded-md border bg-card px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            type="button"
+            onClick={() => {
+              setGenerationError(null);
+              setIsGenerateOpen((value) => !value);
+            }}
+          >
+            {isGenerateOpen ? "Скрыть AI" : "Сгенерировать черновик"}
+          </button>
+          <button
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+            type="button"
+            onClick={() => {
+              setFormError(null);
+              setCopyMessage(null);
+              setDraft(null);
+              setGenerationSummary(null);
+              setEditingProposalId(null);
+              setIsCreateOpen((value) => !value);
+            }}
+          >
+            {isCreateOpen ? "Скрыть форму" : "Создать предложение"}
+          </button>
+        </div>
       </div>
+
+      {isGenerateOpen ? (
+        <div className="mb-5 rounded-lg border bg-background p-4">
+          <div className="grid gap-4 lg:grid-cols-[180px_180px_1fr]">
+            <label className="grid gap-2 text-sm font-medium">
+              Тон
+              <select
+                className="rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                value={generationTone}
+                onChange={(event) =>
+                  setGenerationTone(event.target.value as ProposalTone)
+                }
+              >
+                {proposalTones.map((tone) => (
+                  <option key={tone.value} value={tone.value}>
+                    {tone.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-2 text-sm font-medium">
+              Формат
+              <select
+                className="rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                value={generationFormat}
+                onChange={(event) =>
+                  setGenerationFormat(event.target.value as ProposalFormat)
+                }
+              >
+                {proposalFormats.map((format) => (
+                  <option key={format.value} value={format.value}>
+                    {format.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="grid gap-2 text-sm font-medium">
+              Варианты тура
+              {optionsQuery.isLoading ? (
+                <p className="rounded-md border bg-card px-3 py-2 text-sm text-muted-foreground">
+                  Загружаем варианты...
+                </p>
+              ) : null}
+              {optionsQuery.isError ? (
+                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {getErrorMessage(optionsQuery.error)}
+                </p>
+              ) : null}
+              {!optionsQuery.isLoading && !optionsQuery.isError ? (
+                <div className="flex flex-wrap gap-2">
+                  {options.length > 0 ? (
+                    options.map((option) => (
+                      <label
+                        className="flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm font-medium text-muted-foreground"
+                        key={option.id}
+                      >
+                        <input
+                          checked={selectedOptionIds.includes(option.id)}
+                          type="checkbox"
+                          onChange={() => toggleSelectedOption(option.id)}
+                        />
+                        {option.title}
+                      </label>
+                    ))
+                  ) : (
+                    <p className="rounded-md border bg-card px-3 py-2 text-sm text-muted-foreground">
+                      Вариантов пока нет.
+                    </p>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {generationError ? (
+            <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {generationError}
+            </div>
+          ) : null}
+
+          <div className="mt-4 flex justify-end">
+            <button
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={generateMutation.isPending}
+              type="button"
+              onClick={() => generateMutation.mutate()}
+            >
+              {generateMutation.isPending ? "Генерируем..." : "Создать AI-черновик"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {generationSummary ? (
+        <div className="mb-4 rounded-md border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+          {generationSummary}
+        </div>
+      ) : null}
 
       {isCreateOpen ? (
         <div className="mb-5 rounded-lg border bg-background p-4">
           <ProposalForm
             error={formError}
+            initialValues={draft}
             isSubmitting={createMutation.isPending}
+            key={draft ? `${draft.title}-${draft.content}` : "blank-proposal"}
             submitLabel="Сохранить предложение"
             onCancel={() => setIsCreateOpen(false)}
             onSubmit={handleCreate}
@@ -774,6 +947,7 @@ function ProposalsPanel({
 
 function ProposalForm({
   error,
+  initialValues,
   isSubmitting,
   proposal,
   submitLabel,
@@ -781,6 +955,7 @@ function ProposalForm({
   onSubmit
 }: {
   error: string | null;
+  initialValues?: ProposalFormState | null;
   isSubmitting: boolean;
   proposal?: Proposal;
   submitLabel: string;
@@ -788,9 +963,9 @@ function ProposalForm({
   onSubmit: (payload: ProposalInput) => Promise<void>;
 }) {
   const [values, setValues] = useState<ProposalFormState>({
-    title: proposal?.title ?? "",
-    content: proposal?.content ?? "",
-    format: proposal?.format ?? "telegram"
+    title: initialValues?.title ?? proposal?.title ?? "",
+    content: initialValues?.content ?? proposal?.content ?? "",
+    format: initialValues?.format ?? proposal?.format ?? "telegram"
   });
   const [validationError, setValidationError] = useState<string | null>(null);
 

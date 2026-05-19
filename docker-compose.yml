@@ -22,6 +22,9 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://tripflow:tripflow_local_password@postgres:5432/tripflow}
       BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-tripflow-local-dev-secret-change-me}
+      TIMEWEB_AI_AGENT_URL: ${TIMEWEB_AI_AGENT_URL:-}
+      TIMEWEB_AI_API_TOKEN: ${TIMEWEB_AI_API_TOKEN:-}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
     ports:
       - "8000:8000"
     depends_on:
