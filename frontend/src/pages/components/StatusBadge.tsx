@@ -1,15 +1,11 @@
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import type { ReminderStatus, TravelRequestStatus } from "@/lib/api";
+import {
+  reminderStatusLabels,
+  travelRequestStatusLabels
+} from "@/lib/domain";
 
-export const travelRequestStatusLabels: Record<TravelRequestStatus, string> = {
-  new: "Новая",
-  clarifying: "Уточнение",
-  searching: "Подбор",
-  sent: "Отправлено",
-  thinking: "Клиент думает",
-  booked: "Бронь",
-  rejected: "Отказ"
-};
+export { reminderStatusLabels, travelRequestStatusLabels };
 
 const travelRequestStatusVariants: Record<
   TravelRequestStatus,
@@ -22,11 +18,6 @@ const travelRequestStatusVariants: Record<
   thinking: "violet",
   booked: "emerald",
   rejected: "rose"
-};
-
-export const reminderStatusLabels: Record<ReminderStatus, string> = {
-  active: "Активно",
-  done: "Готово"
 };
 
 export function TravelRequestStatusBadge({

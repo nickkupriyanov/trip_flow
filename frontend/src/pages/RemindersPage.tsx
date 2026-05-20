@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  ApiError,
   createReminder,
   deleteReminder,
   fetchClientRequests,
@@ -32,18 +31,21 @@ import {
   type Reminder,
   type ReminderFilters,
   type ReminderInput,
-  type ReminderStatus
 } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/errors";
+import {
+  formatDateTime,
+  startOfToday,
+  startOfTomorrow,
+  toApiDateTime,
+  toInputDateTime
+} from "@/lib/formatters";
+import { queryKeys } from "@/lib/queryKeys";
 import { EmptyState } from "@/pages/components/EmptyState";
 import { ErrorState, LoadingState } from "@/pages/components/Feedback";
 import { FormField } from "@/pages/components/FormField";
 import { PageHeader } from "@/pages/components/PageHeader";
 import { ReminderStatusBadge } from "@/pages/components/StatusBadge";
-
-const statusLabels: Record<ReminderStatus, string> = {
-  active: "Активно",
-  done: "Готово"
-};
 
 const filterOptions: Array<{
   value: "today" | "overdue" | "active" | "done" | "all";
@@ -66,38 +68,9 @@ const reminderFormSchema = z.object({
 
 type ReminderFormValues = z.infer<typeof reminderFormSchema>;
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  return "Не удалось выполнить действие. Попробуйте ещё раз.";
-}
-
 function emptyToNull(value?: string): string | null {
   const trimmed = value?.trim() ?? "";
   return trimmed ? trimmed : null;
-}
-
-function toInputDateTime(value: Date): string {
-  const offset = value.getTimezoneOffset();
-  const local = new Date(value.getTime() - offset * 60_000);
-  return local.toISOString().slice(0, 16);
-}
-
-function toApiDateTime(value: string): string {
-  return new Date(value).toISOString();
-}
-
-function startOfToday(): Date {
-  const value = new Date();
-  value.setHours(0, 0, 0, 0);
-  return value;
-}
-
-function startOfTomorrow(): Date {
-  const value = startOfToday();
-  value.setDate(value.getDate() + 1);
-  return value;
 }
 
 function defaultDueAt(): string {
@@ -108,15 +81,6 @@ function defaultDueAt(): string {
 
 function dueAtForInput(value: string): string {
   return toInputDateTime(new Date(value));
-}
-
-function formatDateTime(value: string): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(value));
 }
 
 function buildFilters(filter: string): ReminderFilters {
@@ -157,13 +121,13 @@ export function RemindersPage() {
   const filters = useMemo(() => buildFilters(filter), [filter]);
 
   const remindersQuery = useQuery({
-    queryKey: ["reminders", filters],
+    queryKey: queryKeys.reminders(filters),
     queryFn: () => fetchReminders(token!, filters),
     enabled: Boolean(token)
   });
 
   const clientsQuery = useQuery({
-    queryKey: ["clients", "reminder-form"],
+    queryKey: queryKeys.clients("reminder-form"),
     queryFn: () => fetchClients(token!),
     enabled: Boolean(token)
   });
@@ -174,9 +138,9 @@ export function RemindersPage() {
       setFormError(null);
       setMutationError(null);
       setIsCreateOpen(false);
-      await queryClient.invalidateQueries({ queryKey: ["reminders"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.reminders() });
     },
-    onError: (error) => setFormError(getErrorMessage(error))
+    onError: (error) => setFormError(getApiErrorMessage(error))
   });
 
   const updateMutation = useMutation({
@@ -191,27 +155,27 @@ export function RemindersPage() {
       setFormError(null);
       setMutationError(null);
       setEditingReminder(null);
-      await queryClient.invalidateQueries({ queryKey: ["reminders"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.reminders() });
     },
-    onError: (error) => setFormError(getErrorMessage(error))
+    onError: (error) => setFormError(getApiErrorMessage(error))
   });
 
   const doneMutation = useMutation({
     mutationFn: (reminderId: string) => markReminderDone(token!, reminderId),
     onSuccess: async () => {
       setMutationError(null);
-      await queryClient.invalidateQueries({ queryKey: ["reminders"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.reminders() });
     },
-    onError: (error) => setMutationError(getErrorMessage(error))
+    onError: (error) => setMutationError(getApiErrorMessage(error))
   });
 
   const deleteMutation = useMutation({
     mutationFn: (reminderId: string) => deleteReminder(token!, reminderId),
     onSuccess: async () => {
       setMutationError(null);
-      await queryClient.invalidateQueries({ queryKey: ["reminders"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.reminders() });
     },
-    onError: (error) => setMutationError(getErrorMessage(error))
+    onError: (error) => setMutationError(getApiErrorMessage(error))
   });
 
   const reminders = remindersQuery.data ?? [];
@@ -329,7 +293,7 @@ export function RemindersPage() {
       ) : null}
 
       {remindersQuery.isError ? (
-        <ErrorState message={getErrorMessage(remindersQuery.error)} />
+        <ErrorState message={getApiErrorMessage(remindersQuery.error)} />
       ) : null}
 
       {!remindersQuery.isLoading && !remindersQuery.isError && reminders.length === 0 ? (
@@ -384,7 +348,7 @@ function ReminderForm({
 }) {
   const [selectedClientId, setSelectedClientId] = useState(reminder?.clientId ?? "");
   const requestsQuery = useQuery({
-    queryKey: ["client-requests", selectedClientId, "reminder-form"],
+    queryKey: [...queryKeys.clientRequests(selectedClientId), "reminder-form"],
     queryFn: () => fetchClientRequests(token, selectedClientId),
     enabled: Boolean(token && selectedClientId)
   });

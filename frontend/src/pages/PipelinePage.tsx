@@ -13,12 +13,15 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import {
-  ApiError,
   fetchPipeline,
   updateTravelRequestStatus,
   type PipelineTravelRequest,
   type TravelRequestStatus
 } from "@/lib/api";
+import { travelRequestStatuses } from "@/lib/domain";
+import { getApiErrorMessage } from "@/lib/errors";
+import { formatRequestMeta } from "@/lib/formatters";
+import { queryKeys } from "@/lib/queryKeys";
 import { EmptyState } from "@/pages/components/EmptyState";
 import { ErrorState, LoadingState } from "@/pages/components/Feedback";
 import { PageHeader } from "@/pages/components/PageHeader";
@@ -27,30 +30,13 @@ import {
   travelRequestStatusLabels
 } from "@/pages/components/StatusBadge";
 
-const statuses: TravelRequestStatus[] = [
-  "new",
-  "clarifying",
-  "searching",
-  "sent",
-  "thinking",
-  "booked",
-  "rejected"
-];
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  return "Не удалось выполнить действие. Попробуйте ещё раз.";
-}
-
 export function PipelinePage() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const [mutationError, setMutationError] = useState<string | null>(null);
 
   const pipelineQuery = useQuery({
-    queryKey: ["pipeline"],
+    queryKey: queryKeys.pipeline(),
     queryFn: () => fetchPipeline(token!),
     enabled: Boolean(token)
   });
@@ -65,19 +51,26 @@ export function PipelinePage() {
     }) => updateTravelRequestStatus(token!, requestId, { status }),
     onSuccess: async (request) => {
       setMutationError(null);
-      await queryClient.invalidateQueries({ queryKey: ["pipeline"] });
-      await queryClient.invalidateQueries({ queryKey: ["travel-requests"] });
-      await queryClient.invalidateQueries({ queryKey: ["travel-request", request.id] });
-      await queryClient.invalidateQueries({ queryKey: ["client-requests"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.pipeline() });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.travelRequests() });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.travelRequest(request.id)
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.clientRequests(request.clientId)
+      });
     },
-    onError: (error) => setMutationError(getErrorMessage(error))
+    onError: (error) => setMutationError(getApiErrorMessage(error))
   });
 
   const pipeline = pipelineQuery.data;
   const totalRequests =
     pipeline === undefined
       ? 0
-      : statuses.reduce((total, status) => total + pipeline[status].length, 0);
+      : travelRequestStatuses.reduce(
+          (total, status) => total + pipeline[status].length,
+          0,
+        );
 
   function handleStatusChange(
     request: PipelineTravelRequest,
@@ -113,7 +106,7 @@ export function PipelinePage() {
       ) : null}
 
       {pipelineQuery.isError ? (
-        <ErrorState message={getErrorMessage(pipelineQuery.error)} />
+        <ErrorState message={getApiErrorMessage(pipelineQuery.error)} />
       ) : null}
 
       {!pipelineQuery.isLoading && !pipelineQuery.isError && totalRequests === 0 ? (
@@ -125,7 +118,7 @@ export function PipelinePage() {
 
       {pipeline ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
-          {statuses.map((status) => (
+          {travelRequestStatuses.map((status) => (
             <PipelineColumn
               key={status}
               isUpdating={statusMutation.isPending}
@@ -204,7 +197,7 @@ function PipelineCard({
           {request.destination || "Заявка без направления"}
         </h3>
         <p className="mt-2 text-xs leading-5 text-muted-foreground">
-          {formatMeta(request)}
+            {formatRequestMeta(request)}
         </p>
       </Link>
 
@@ -227,7 +220,7 @@ function PipelineCard({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {statuses.map((status) => (
+            {travelRequestStatuses.map((status) => (
               <SelectItem key={status} value={status}>
                 {travelRequestStatusLabels[status]}
               </SelectItem>
@@ -238,27 +231,4 @@ function PipelineCard({
       </CardContent>
     </Card>
   );
-}
-
-function formatMeta(request: PipelineTravelRequest): string {
-  const parts = [
-    request.departureCity,
-    formatRange(request.dateFrom, request.dateTo),
-    formatBudget(request.budgetMin, request.budgetMax)
-  ].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : "Параметры ещё не заполнены";
-}
-
-function formatRange(from: string | null, to: string | null): string | null {
-  if (from && to) {
-    return `${from} - ${to}`;
-  }
-  return from ?? to;
-}
-
-function formatBudget(min: number | null, max: number | null): string | null {
-  if (min && max) {
-    return `${min} - ${max}`;
-  }
-  return min?.toString() ?? max?.toString() ?? null;
 }

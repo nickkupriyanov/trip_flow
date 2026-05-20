@@ -2,17 +2,23 @@ import { Navigate, RouterProvider, createBrowserRouter } from "react-router-dom"
 
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import { AppLayout } from "@/layouts/AppLayout";
-import { AuthPage } from "@/pages/AuthPage";
-import { ClientDetailPage } from "@/pages/ClientDetailPage";
-import { ClientsPage } from "@/pages/ClientsPage";
-import { DashboardPage } from "@/pages/DashboardPage";
-import { PipelinePage } from "@/pages/PipelinePage";
-import { RemindersPage } from "@/pages/RemindersPage";
-import { TravelRequestDetailPage } from "@/pages/TravelRequestDetailPage";
+import { LoadingState } from "@/pages/components/Feedback";
 
 const router = createBrowserRouter([
-  { path: "/login", element: <AuthPage mode="login" /> },
-  { path: "/register", element: <AuthPage mode="register" /> },
+  {
+    path: "/login",
+    lazy: async () => {
+      const { AuthPage } = await import("@/pages/AuthPage");
+      return { Component: () => <AuthPage mode="login" /> };
+    }
+  },
+  {
+    path: "/register",
+    lazy: async () => {
+      const { AuthPage } = await import("@/pages/AuthPage");
+      return { Component: () => <AuthPage mode="register" /> };
+    }
+  },
   {
     path: "/",
     element: <ProtectedRoute />,
@@ -21,12 +27,50 @@ const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { index: true, element: <Navigate to="/dashboard" replace /> },
-          { path: "dashboard", element: <DashboardPage /> },
-          { path: "pipeline", element: <PipelinePage /> },
-          { path: "reminders", element: <RemindersPage /> },
-          { path: "clients", element: <ClientsPage /> },
-          { path: "clients/:clientId", element: <ClientDetailPage /> },
-          { path: "requests/:requestId", element: <TravelRequestDetailPage /> }
+          {
+            path: "dashboard",
+            lazy: async () => {
+              const { DashboardPage } = await import("@/pages/DashboardPage");
+              return { Component: DashboardPage };
+            }
+          },
+          {
+            path: "pipeline",
+            lazy: async () => {
+              const { PipelinePage } = await import("@/pages/PipelinePage");
+              return { Component: PipelinePage };
+            }
+          },
+          {
+            path: "reminders",
+            lazy: async () => {
+              const { RemindersPage } = await import("@/pages/RemindersPage");
+              return { Component: RemindersPage };
+            }
+          },
+          {
+            path: "clients",
+            lazy: async () => {
+              const { ClientsPage } = await import("@/pages/ClientsPage");
+              return { Component: ClientsPage };
+            }
+          },
+          {
+            path: "clients/:clientId",
+            lazy: async () => {
+              const { ClientDetailPage } = await import("@/pages/ClientDetailPage");
+              return { Component: ClientDetailPage };
+            }
+          },
+          {
+            path: "requests/:requestId",
+            lazy: async () => {
+              const { TravelRequestDetailPage } = await import(
+                "@/pages/TravelRequestDetailPage"
+              );
+              return { Component: TravelRequestDetailPage };
+            }
+          }
         ]
       }
     ]
@@ -34,5 +78,10 @@ const router = createBrowserRouter([
 ]);
 
 export function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <RouterProvider
+      fallbackElement={<LoadingState text="Загружаем TripFlow..." />}
+      router={router}
+    />
+  );
 }

@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  ApiError,
   fetchClients,
   fetchPipeline,
   fetchReminders,
@@ -19,35 +18,19 @@ import {
   type ReminderFilters,
   type TravelRequestStatus
 } from "@/lib/api";
+import { inProgressTravelRequestStatuses } from "@/lib/domain";
+import { getApiErrorMessage } from "@/lib/errors";
+import {
+  formatRequestMeta,
+  formatShortDate,
+  formatTime,
+  startOfToday,
+  startOfTomorrow
+} from "@/lib/formatters";
+import { queryKeys } from "@/lib/queryKeys";
 import { PageHeader } from "@/pages/components/PageHeader";
 import { ErrorState } from "@/pages/components/Feedback";
 import { TravelRequestStatusBadge } from "@/pages/components/StatusBadge";
-
-const inProgressStatuses: TravelRequestStatus[] = [
-  "clarifying",
-  "searching",
-  "sent",
-  "thinking"
-];
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  return "Не удалось загрузить данные. Попробуйте обновить страницу.";
-}
-
-function startOfToday(): Date {
-  const value = new Date();
-  value.setHours(0, 0, 0, 0);
-  return value;
-}
-
-function startOfTomorrow(): Date {
-  const value = startOfToday();
-  value.setDate(value.getDate() + 1);
-  return value;
-}
 
 function todayReminderFilters(): ReminderFilters {
   return {
@@ -55,43 +38,6 @@ function todayReminderFilters(): ReminderFilters {
     dueFrom: startOfToday().toISOString(),
     dueTo: startOfTomorrow().toISOString()
   };
-}
-
-function formatTime(value: string): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(value));
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "2-digit",
-    month: "short"
-  }).format(new Date(value));
-}
-
-function formatRequestMeta(request: PipelineTravelRequest): string {
-  const parts = [
-    request.departureCity,
-    formatRange(request.dateFrom, request.dateTo),
-    formatBudget(request.budgetMin, request.budgetMax)
-  ].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : "Параметры ещё не заполнены";
-}
-
-function formatRange(from: string | null, to: string | null): string | null {
-  if (from && to) {
-    return `${from} - ${to}`;
-  }
-  return from ?? to;
-}
-
-function formatBudget(min: number | null, max: number | null): string | null {
-  if (min && max) {
-    return `${min} - ${max}`;
-  }
-  return min?.toString() ?? max?.toString() ?? null;
 }
 
 function flattenRequests(
@@ -117,19 +63,19 @@ export function DashboardPage() {
 
   const filters = todayReminderFilters();
   const remindersQuery = useQuery({
-    queryKey: ["reminders", filters],
+    queryKey: queryKeys.reminders(filters),
     queryFn: () => fetchReminders(token!, filters),
     enabled: Boolean(token)
   });
 
   const pipelineQuery = useQuery({
-    queryKey: ["pipeline"],
+    queryKey: queryKeys.pipeline(),
     queryFn: () => fetchPipeline(token!),
     enabled: Boolean(token)
   });
 
   const clientsQuery = useQuery({
-    queryKey: ["clients", "dashboard"],
+    queryKey: queryKeys.clients("dashboard"),
     queryFn: () => fetchClients(token!),
     enabled: Boolean(token)
   });
@@ -137,14 +83,17 @@ export function DashboardPage() {
   const doneMutation = useMutation({
     mutationFn: (reminderId: string) => markReminderDone(token!, reminderId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["reminders"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.reminders() });
     }
   });
 
   const reminders = remindersQuery.data ?? [];
   const pipeline = pipelineQuery.data;
   const newRequests = flattenRequests(pipeline, ["new"]);
-  const inProgressRequests = flattenRequests(pipeline, inProgressStatuses);
+  const inProgressRequests = flattenRequests(
+    pipeline,
+    inProgressTravelRequestStatuses,
+  );
   const recentClients = (clientsQuery.data ?? []).slice(0, 5);
   const hasLoadError =
     remindersQuery.isError ||
@@ -181,17 +130,18 @@ export function DashboardPage() {
           isLoading={pipelineQuery.isLoading}
           label="В работе"
           note="Уточнение, подбор, отправлено, думает"
-          value={countRequests(pipeline, inProgressStatuses)}
+          value={countRequests(pipeline, inProgressTravelRequestStatuses)}
         />
       </div>
 
       {hasLoadError ? (
         <ErrorState
-          message={getErrorMessage(
+          message={getApiErrorMessage(
             remindersQuery.error ??
               pipelineQuery.error ??
               clientsQuery.error ??
               doneMutation.error,
+            "Не удалось загрузить данные. Попробуйте обновить страницу.",
           )}
         />
       ) : null}
@@ -395,7 +345,7 @@ function ClientRow({ client }: { client: Client }) {
           </p>
         </div>
         <span className="shrink-0 text-xs text-muted-foreground">
-          {formatDate(client.createdAt)}
+          {formatShortDate(client.createdAt)}
         </span>
       </div>
       </Link>

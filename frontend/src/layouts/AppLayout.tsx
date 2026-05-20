@@ -85,14 +85,17 @@ export function AppLayout() {
               </h1>
             </div>
 
-            <nav className="flex gap-2 lg:hidden" aria-label="Мобильная навигация">
+            <nav
+              className="flex gap-2 overflow-x-auto pb-1 lg:hidden"
+              aria-label="Мобильная навигация"
+            >
               {navigationItems.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
                   className={({ isActive }) =>
                     cn(
-                      "rounded-md border px-3 py-2 text-sm font-medium",
+                      "shrink-0 rounded-md border px-3 py-2 text-sm font-medium",
                       isActive
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-border bg-card text-muted-foreground"
@@ -103,6 +106,7 @@ export function AppLayout() {
                 </NavLink>
               ))}
               <Button
+                className="shrink-0"
                 variant="outline"
                 type="button"
                 onClick={handleLogout}

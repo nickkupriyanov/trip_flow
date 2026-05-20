@@ -35,6 +35,7 @@ import {
   type TravelRequest,
   type TravelRequestInput
 } from "@/lib/api";
+import { formatRequestMeta } from "@/lib/formatters";
 import { ClientForm } from "@/pages/components/ClientForm";
 import { CommunicationNotesPanel } from "@/pages/components/CommunicationNotesPanel";
 import { EmptyState } from "@/pages/components/EmptyState";
@@ -560,7 +561,7 @@ function RequestCard({ request }: { request: TravelRequest }) {
             {request.destination || "Заявка без направления"}
           </h4>
           <p className="mt-1 text-sm text-muted-foreground">
-            {formatRequestMeta(request)}
+            {formatRequestMeta(request, "Параметры поездки ещё не заполнены")}
           </p>
         </div>
         <TravelRequestStatusBadge status={request.status} />
@@ -573,29 +574,6 @@ function RequestCard({ request }: { request: TravelRequest }) {
       </Link>
     </Card>
   );
-}
-
-function formatRequestMeta(request: TravelRequest): string {
-  const parts = [
-    request.departureCity,
-    formatDateRange(request.dateFrom, request.dateTo),
-    formatBudget(request.budgetMin, request.budgetMax)
-  ].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : "Параметры поездки ещё не заполнены";
-}
-
-function formatDateRange(from: string | null, to: string | null): string | null {
-  if (from && to) {
-    return `${from} - ${to}`;
-  }
-  return from ?? to;
-}
-
-function formatBudget(min: number | null, max: number | null): string | null {
-  if (min && max) {
-    return `${min} - ${max}`;
-  }
-  return min?.toString() ?? max?.toString() ?? null;
 }
 
 function toPreferenceValues(
