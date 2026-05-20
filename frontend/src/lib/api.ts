@@ -239,6 +239,29 @@ export type ReminderInput = {
   status?: ReminderStatus;
 };
 
+export type CommunicationNoteType =
+  | "note"
+  | "call"
+  | "telegram"
+  | "whatsapp"
+  | "email";
+
+export type CommunicationNote = {
+  id: string;
+  clientId: string;
+  requestId: string | null;
+  type: CommunicationNoteType;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CommunicationNoteInput = {
+  requestId?: string | null;
+  type?: CommunicationNoteType;
+  content: string;
+};
+
 export type ReminderFilters = {
   status?: ReminderStatus;
   dueFrom?: string;
@@ -637,4 +660,63 @@ export function markReminderDone(
 
 export function deleteReminder(token: string, reminderId: string): Promise<void> {
   return apiRequest<void>(`/reminders/${reminderId}`, { method: "DELETE" }, token);
+}
+
+export function fetchClientCommunicationNotes(
+  token: string,
+  clientId: string,
+): Promise<CommunicationNote[]> {
+  return apiRequest<CommunicationNote[]>(
+    `/clients/${clientId}/notes`,
+    {},
+    token,
+  );
+}
+
+export function fetchRequestCommunicationNotes(
+  token: string,
+  requestId: string,
+): Promise<CommunicationNote[]> {
+  return apiRequest<CommunicationNote[]>(
+    `/requests/${requestId}/notes`,
+    {},
+    token,
+  );
+}
+
+export function createCommunicationNote(
+  token: string,
+  clientId: string,
+  payload: CommunicationNoteInput,
+): Promise<CommunicationNote> {
+  return apiRequest<CommunicationNote>(
+    `/clients/${clientId}/notes`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
+}
+
+export function updateCommunicationNote(
+  token: string,
+  noteId: string,
+  payload: Partial<CommunicationNoteInput>,
+): Promise<CommunicationNote> {
+  return apiRequest<CommunicationNote>(
+    `/notes/${noteId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
+}
+
+export function deleteCommunicationNote(
+  token: string,
+  noteId: string,
+): Promise<void> {
+  return apiRequest<void>(`/notes/${noteId}`, { method: "DELETE" }, token);
 }

@@ -25,6 +25,7 @@ import {
   type TravelRequestStatus
 } from "@/lib/api";
 import { ClientForm } from "@/pages/components/ClientForm";
+import { CommunicationNotesPanel } from "@/pages/components/CommunicationNotesPanel";
 import { EmptyState } from "@/pages/components/EmptyState";
 import { TravelRequestForm } from "@/pages/components/TravelRequestForm";
 
@@ -210,6 +211,11 @@ export function ClientDetailPage() {
         error={preferencesQuery.isError ? getErrorMessage(preferencesQuery.error) : null}
         isLoading={preferencesQuery.isLoading}
         preferences={preferencesQuery.data ?? null}
+        token={token!}
+      />
+
+      <CommunicationNotesPanel
+        scope={{ kind: "client", clientId: client.id }}
         token={token!}
       />
 
