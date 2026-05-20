@@ -3,7 +3,12 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import type { Client, ClientInput } from "@/lib/api";
+import { FormField } from "@/pages/components/FormField";
 
 const clientFormSchema = z.object({
   fullName: z.string().trim().min(1, "Введите имя клиента").max(160),
@@ -100,112 +105,64 @@ export function ClientForm({
   return (
     <form className="space-y-4" onSubmit={form.handleSubmit(handleSubmit)}>
       {error ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
 
-      <Field
+      <FormField
         error={form.formState.errors.fullName?.message}
         label="Имя клиента"
       >
-        <input
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-          {...form.register("fullName")}
-        />
-      </Field>
+        <Input {...form.register("fullName")} />
+      </FormField>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Телефон">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-            {...form.register("phone")}
-          />
-        </Field>
-        <Field label="Email">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-            type="email"
-            {...form.register("email")}
-          />
-        </Field>
-        <Field label="Telegram">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-            {...form.register("telegram")}
-          />
-        </Field>
-        <Field label="WhatsApp">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-            {...form.register("whatsapp")}
-          />
-        </Field>
-        <Field label="Город">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-            {...form.register("city")}
-          />
-        </Field>
-        <Field label="Источник">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-            {...form.register("source")}
-          />
-        </Field>
+        <FormField label="Телефон">
+          <Input {...form.register("phone")} />
+        </FormField>
+        <FormField label="Email">
+          <Input type="email" {...form.register("email")} />
+        </FormField>
+        <FormField label="Telegram">
+          <Input {...form.register("telegram")} />
+        </FormField>
+        <FormField label="WhatsApp">
+          <Input {...form.register("whatsapp")} />
+        </FormField>
+        <FormField label="Город">
+          <Input {...form.register("city")} />
+        </FormField>
+        <FormField label="Источник">
+          <Input {...form.register("source")} />
+        </FormField>
       </div>
 
-      <Field label="Теги">
-        <input
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+      <FormField label="Теги">
+        <Input
           placeholder="семья, VIP, повторный клиент"
           {...form.register("tagsText")}
         />
-      </Field>
+      </FormField>
 
-      <Field label="Заметки">
-        <textarea
-          className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-          {...form.register("notes")}
-        />
-      </Field>
+      <FormField label="Заметки">
+        <Textarea {...form.register("notes")} />
+      </FormField>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
         {onCancel ? (
-          <button
-            className="rounded-md border bg-card px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          <Button
+            variant="outline"
             type="button"
             onClick={onCancel}
           >
             Отмена
-          </button>
+          </Button>
         ) : null}
-        <button
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isSubmitting}
-          type="submit"
-        >
+        <Button disabled={isSubmitting} type="submit">
           {isSubmitting ? "Сохраняем..." : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
-  );
-}
-
-function Field({
-  children,
-  error,
-  label
-}: {
-  children: React.ReactNode;
-  error?: string;
-  label: string;
-}) {
-  return (
-    <label className="block space-y-2">
-      <span className="text-sm font-medium">{label}</span>
-      {children}
-      {error ? <span className="block text-sm text-red-700">{error}</span> : null}
-    </label>
   );
 }

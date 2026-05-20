@@ -1,6 +1,8 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/auth/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 type NavigationItem = {
@@ -55,19 +57,20 @@ export function AppLayout() {
           ))}
         </nav>
 
-        <div className="absolute inset-x-5 bottom-6 rounded-lg border bg-background p-4">
+        <Card className="absolute inset-x-5 bottom-6 bg-background p-4">
           <p className="text-sm font-medium text-foreground">{user?.name}</p>
           <p className="mt-1 truncate text-xs text-muted-foreground">
             {user?.email}
           </p>
-          <button
-            className="mt-3 w-full rounded-md border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          <Button
+            className="mt-3 w-full"
+            variant="outline"
             type="button"
             onClick={handleLogout}
           >
             Выйти
-          </button>
-        </div>
+          </Button>
+        </Card>
       </aside>
 
       <div className="lg:pl-64">
@@ -99,13 +102,13 @@ export function AppLayout() {
                   {item.label}
                 </NavLink>
               ))}
-              <button
-                className="rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground"
+              <Button
+                variant="outline"
                 type="button"
                 onClick={handleLogout}
               >
                 Выйти
-              </button>
+              </Button>
             </nav>
           </div>
         </header>

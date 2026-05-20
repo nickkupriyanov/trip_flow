@@ -1,12 +1,24 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { useAuth } from "@/auth/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ApiError,
   createReminder,
@@ -23,7 +35,10 @@ import {
   type ReminderStatus
 } from "@/lib/api";
 import { EmptyState } from "@/pages/components/EmptyState";
+import { ErrorState, LoadingState } from "@/pages/components/Feedback";
+import { FormField } from "@/pages/components/FormField";
 import { PageHeader } from "@/pages/components/PageHeader";
+import { ReminderStatusBadge } from "@/pages/components/StatusBadge";
 
 const statusLabels: Record<ReminderStatus, string> = {
   active: "Активно",
@@ -230,8 +245,8 @@ export function RemindersPage() {
           title="Напоминания"
           description="Follow-up, звонки и короткие действия, которые помогают довести заявку до решения."
         />
-        <button
-          className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 sm:w-auto"
+        <Button
+          className="w-full sm:w-auto"
           type="button"
           onClick={() => {
             setFormError(null);
@@ -240,87 +255,81 @@ export function RemindersPage() {
           }}
         >
           {isCreateOpen ? "Скрыть форму" : "Создать напоминание"}
-        </button>
+        </Button>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {filterOptions.map((option) => (
-          <button
-            className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
-              filter === option.value
-                ? "border-primary bg-primary text-primary-foreground"
-                : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
+          <Button
             key={option.value}
+            variant={filter === option.value ? "default" : "outline"}
             type="button"
             onClick={() => setFilter(option.value)}
           >
             {option.label}
-          </button>
+          </Button>
         ))}
       </div>
 
       {isCreateOpen ? (
-        <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <div className="mb-5">
-            <h3 className="text-lg font-semibold">Новое напоминание</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+        <Card>
+          <CardHeader>
+            <CardTitle>Новое напоминание</CardTitle>
+            <CardDescription>
               Свяжите его с клиентом или заявкой, если это помогает быстро вернуться в контекст.
-            </p>
-          </div>
-          <ReminderForm
-            clients={clients}
-            error={formError}
-            isSubmitting={createMutation.isPending}
-            submitLabel="Создать напоминание"
-            token={token!}
-            onCancel={() => setIsCreateOpen(false)}
-            onSubmit={handleCreate}
-          />
-        </div>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ReminderForm
+              clients={clients}
+              error={formError}
+              isSubmitting={createMutation.isPending}
+              submitLabel="Создать напоминание"
+              token={token!}
+              onCancel={() => setIsCreateOpen(false)}
+              onSubmit={handleCreate}
+            />
+          </CardContent>
+        </Card>
       ) : null}
 
       {editingReminder ? (
-        <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <div className="mb-5">
-            <h3 className="text-lg font-semibold">Редактирование</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+        <Card>
+          <CardHeader>
+            <CardTitle>Редактирование</CardTitle>
+            <CardDescription>
               Обновите текст, срок или привязку к клиенту и заявке.
-            </p>
-          </div>
-          <ReminderForm
-            clients={clients}
-            error={formError}
-            isSubmitting={updateMutation.isPending}
-            key={editingReminder.id}
-            reminder={editingReminder}
-            submitLabel="Сохранить изменения"
-            token={token!}
-            onCancel={() => {
-              setFormError(null);
-              setEditingReminder(null);
-            }}
-            onSubmit={handleUpdate}
-          />
-        </div>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ReminderForm
+              clients={clients}
+              error={formError}
+              isSubmitting={updateMutation.isPending}
+              key={editingReminder.id}
+              reminder={editingReminder}
+              submitLabel="Сохранить изменения"
+              token={token!}
+              onCancel={() => {
+                setFormError(null);
+                setEditingReminder(null);
+              }}
+              onSubmit={handleUpdate}
+            />
+          </CardContent>
+        </Card>
       ) : null}
 
       {mutationError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm">
-          {mutationError}
-        </div>
+        <ErrorState message={mutationError} />
       ) : null}
 
       {remindersQuery.isLoading ? (
-        <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground shadow-sm">
-          Загружаем напоминания...
-        </div>
+        <LoadingState text="Загружаем напоминания..." />
       ) : null}
 
       {remindersQuery.isError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700 shadow-sm">
-          {getErrorMessage(remindersQuery.error)}
-        </div>
+        <ErrorState message={getErrorMessage(remindersQuery.error)} />
       ) : null}
 
       {!remindersQuery.isLoading && !remindersQuery.isError && reminders.length === 0 ? (
@@ -412,85 +421,89 @@ function ReminderForm({
   return (
     <form className="space-y-4" onSubmit={form.handleSubmit(handleSubmit)}>
       {error ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field error={form.formState.errors.title?.message} label="Название">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+        <FormField error={form.formState.errors.title?.message} label="Название">
+          <Input
             placeholder="Написать клиенту по Турции"
             {...form.register("title")}
           />
-        </Field>
-        <Field error={form.formState.errors.dueAt?.message} label="Дата и время">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+        </FormField>
+        <FormField error={form.formState.errors.dueAt?.message} label="Дата и время">
+          <Input
             type="datetime-local"
             {...form.register("dueAt")}
           />
-        </Field>
-        <Field label="Клиент">
-          <select
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-            {...form.register("clientId")}
+        </FormField>
+        <FormField label="Клиент">
+          <Select
             value={selectedClientId}
-            onChange={(event) => {
-              setSelectedClientId(event.target.value);
+            onValueChange={(value) => {
+              setSelectedClientId(value === "none" ? "" : value);
               form.setValue("requestId", "");
             }}
           >
-            <option value="">Без клиента</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.fullName}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Заявка">
-          <select
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
+            <SelectTrigger>
+              <SelectValue placeholder="Без клиента" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Без клиента</SelectItem>
+              {clients.map((client) => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.fullName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormField>
+        <FormField label="Заявка">
+          <Select
             disabled={!selectedClientId || requestsQuery.isLoading}
-            {...form.register("requestId")}
+            value={form.watch("requestId") || "none"}
+            onValueChange={(value) =>
+              form.setValue("requestId", value === "none" ? "" : value, {
+                shouldDirty: true,
+                shouldValidate: true
+              })
+            }
           >
-            <option value="">
-              {selectedClientId ? "Без заявки" : "Сначала выберите клиента"}
-            </option>
-            {requests.map((request) => (
-              <option key={request.id} value={request.id}>
-                {request.destination || "Заявка без направления"}
-              </option>
-            ))}
-          </select>
-        </Field>
+            <SelectTrigger>
+              <SelectValue
+                placeholder={selectedClientId ? "Без заявки" : "Сначала выберите клиента"}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">
+                {selectedClientId ? "Без заявки" : "Сначала выберите клиента"}
+              </SelectItem>
+              {requests.map((request) => (
+                <SelectItem key={request.id} value={request.id}>
+                  {request.destination || "Заявка без направления"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormField>
       </div>
 
-      <Field label="Описание">
-        <textarea
-          className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+      <FormField label="Описание">
+        <Textarea
           placeholder="Что именно нужно сделать перед следующим контактом"
           {...form.register("description")}
         />
-      </Field>
+      </FormField>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-        <button
-          className="rounded-md border bg-card px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          type="button"
-          onClick={onCancel}
-        >
+        <Button variant="outline" type="button" onClick={onCancel}>
           Отмена
-        </button>
-        <button
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isSubmitting}
-          type="submit"
-        >
+        </Button>
+        <Button disabled={isSubmitting} type="submit">
           {isSubmitting ? "Сохраняем..." : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -517,21 +530,16 @@ function ReminderCard({
   const overdue = isOverdue(reminder);
 
   return (
-    <article className="rounded-lg border bg-card p-4 shadow-sm">
+    <Card>
+      <CardContent className="p-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
-                reminder.status === "done"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                  : overdue
-                    ? "border-rose-200 bg-rose-50 text-rose-800"
-                    : "border-sky-200 bg-sky-50 text-sky-800"
-              }`}
-            >
-              {overdue ? "Просрочено" : statusLabels[reminder.status]}
-            </span>
+            {overdue ? (
+              <Badge variant="rose">Просрочено</Badge>
+            ) : (
+              <ReminderStatusBadge status={reminder.status} />
+            )}
             <span className="text-sm font-medium text-muted-foreground">
               {formatDateTime(reminder.dueAt)}
             </span>
@@ -566,50 +574,29 @@ function ReminderCard({
 
         <div className="flex flex-wrap gap-2">
           {reminder.status === "active" ? (
-            <button
-              className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+            <Button
               disabled={isMarkingDone}
+              variant="secondary"
               type="button"
               onClick={() => onMarkDone(reminder)}
             >
               Готово
-            </button>
+            </Button>
           ) : null}
-          <button
-            className="rounded-md border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            type="button"
-            onClick={() => onEdit(reminder)}
-          >
+          <Button variant="outline" type="button" onClick={() => onEdit(reminder)}>
             Изменить
-          </button>
-          <button
-            className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+          </Button>
+          <Button
             disabled={isDeleting}
+            variant="destructive"
             type="button"
             onClick={() => onDelete(reminder)}
           >
             Удалить
-          </button>
+          </Button>
         </div>
       </div>
-    </article>
-  );
-}
-
-function Field({
-  children,
-  error,
-  label
-}: {
-  children: ReactNode;
-  error?: string;
-  label: string;
-}) {
-  return (
-    <label className="block space-y-2 text-sm font-medium">
-      <span>{label}</span>
-      {children}
-      {error ? <span className="block text-sm text-red-600">{error}</span> : null}
-    </label>
+      </CardContent>
+    </Card>
   );
 }

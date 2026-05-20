@@ -2,11 +2,23 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import type {
   TravelRequest,
   TravelRequestInput,
   TravelRequestStatus
 } from "@/lib/api";
+import { FormField } from "@/pages/components/FormField";
 
 const statuses: Array<{ value: TravelRequestStatus; label: string }> = [
   { value: "new", label: "Новая" },
@@ -139,185 +151,156 @@ export function TravelRequestForm({
   return (
     <form className="space-y-5" onSubmit={form.handleSubmit(handleSubmit)}>
       {error ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field error={form.formState.errors.status?.message} label="Статус">
-          <select
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-            {...form.register("status")}
+        <FormField error={form.formState.errors.status?.message} label="Статус">
+          <Select
+            value={form.watch("status")}
+            onValueChange={(value) =>
+              form.setValue("status", value as TravelRequestStatus, {
+                shouldDirty: true,
+                shouldValidate: true
+              })
+            }
           >
-            {statuses.map((status) => (
-              <option key={status.value} value={status.value}>
-                {status.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Направление">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {statuses.map((status) => (
+                <SelectItem key={status.value} value={status.value}>
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormField>
+        <FormField label="Направление">
+          <Input
             placeholder="Турция, Белек"
             {...form.register("destination")}
           />
-        </Field>
-        <Field label="Город вылета">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+        </FormField>
+        <FormField label="Город вылета">
+          <Input
             placeholder="Москва"
             {...form.register("departureCity")}
           />
-        </Field>
-        <Field label="Тип поездки">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+        </FormField>
+        <FormField label="Тип поездки">
+          <Input
             placeholder="семейный пляж, honeymoon"
             {...form.register("travelType")}
           />
-        </Field>
+        </FormField>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Дата от">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          <FormField label="Дата от">
+            <Input
               type="date"
               {...form.register("dateFrom")}
             />
-          </Field>
-          <Field label="Дата до">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          </FormField>
+          <FormField label="Дата до">
+            <Input
               type="date"
               {...form.register("dateTo")}
             />
-          </Field>
+          </FormField>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Ночей от">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          <FormField label="Ночей от">
+            <Input
               min="0"
               type="number"
               {...form.register("nightsFrom")}
             />
-          </Field>
-          <Field label="Ночей до">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          </FormField>
+          <FormField label="Ночей до">
+            <Input
               min="0"
               type="number"
               {...form.register("nightsTo")}
             />
-          </Field>
+          </FormField>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field error={form.formState.errors.adults?.message} label="Взрослых">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          <FormField error={form.formState.errors.adults?.message} label="Взрослых">
+            <Input
               min="1"
               type="number"
               {...form.register("adults")}
             />
-          </Field>
-          <Field error={form.formState.errors.children?.message} label="Детей">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          </FormField>
+          <FormField error={form.formState.errors.children?.message} label="Детей">
+            <Input
               min="0"
               type="number"
               {...form.register("children")}
             />
-          </Field>
+          </FormField>
         </div>
-        <Field label="Возраст детей">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+        <FormField label="Возраст детей">
+          <Input
             placeholder="7, 11"
             {...form.register("childrenAgesText")}
           />
-        </Field>
+        </FormField>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Бюджет от">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          <FormField label="Бюджет от">
+            <Input
               min="0"
               type="number"
               {...form.register("budgetMin")}
             />
-          </Field>
-          <Field label="Бюджет до">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          </FormField>
+          <FormField label="Бюджет до">
+            <Input
               min="0"
               type="number"
               {...form.register("budgetMax")}
             />
-          </Field>
+          </FormField>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Пожелания">
-          <textarea
-            className="min-h-28 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+        <FormField label="Пожелания">
+          <Textarea
+            className="min-h-28"
             placeholder="Что важно клиенту в поездке"
             {...form.register("wishes")}
           />
-        </Field>
-        <Field label="Ограничения">
-          <textarea
-            className="min-h-28 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+        </FormField>
+        <FormField label="Ограничения">
+          <Textarea
+            className="min-h-28"
             placeholder="Что нужно исключить"
             {...form.register("restrictions")}
           />
-        </Field>
+        </FormField>
       </div>
 
-      <Field label="Внутренний комментарий">
-        <textarea
-          className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+      <FormField label="Внутренний комментарий">
+        <Textarea
           placeholder="Заметка только для агента"
           {...form.register("internalComment")}
         />
-      </Field>
+      </FormField>
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         {onCancel ? (
-          <button
-            className="rounded-md border bg-card px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            type="button"
-            onClick={onCancel}
-          >
+          <Button variant="outline" type="button" onClick={onCancel}>
             Отмена
-          </button>
+          </Button>
         ) : null}
-        <button
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isSubmitting}
-          type="submit"
-        >
+        <Button disabled={isSubmitting} type="submit">
           {isSubmitting ? "Сохраняем..." : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
-  );
-}
-
-function Field({
-  children,
-  error,
-  label
-}: {
-  children: React.ReactNode;
-  error?: string;
-  label: string;
-}) {
-  return (
-    <label className="block space-y-2">
-      <span className="text-sm font-medium">{label}</span>
-      {children}
-      {error ? <span className="block text-xs text-red-700">{error}</span> : null}
-    </label>
   );
 }

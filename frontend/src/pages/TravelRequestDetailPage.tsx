@@ -3,6 +3,20 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 
 import { useAuth } from "@/auth/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ApiError,
   createProposal,
@@ -26,23 +40,15 @@ import {
   type TourOption,
   type TourOptionInput,
   type TravelRequest,
-  type TravelRequestInput,
-  type TravelRequestStatus
+  type TravelRequestInput
 } from "@/lib/api";
 import { CommunicationNotesPanel } from "@/pages/components/CommunicationNotesPanel";
 import { EmptyState } from "@/pages/components/EmptyState";
+import { ErrorState, LoadingState } from "@/pages/components/Feedback";
+import { FormField } from "@/pages/components/FormField";
+import { TravelRequestStatusBadge } from "@/pages/components/StatusBadge";
 import { TourOptionForm } from "@/pages/components/TourOptionForm";
 import { TravelRequestForm } from "@/pages/components/TravelRequestForm";
-
-const statusLabels: Record<TravelRequestStatus, string> = {
-  new: "Новая",
-  clarifying: "Уточнение",
-  searching: "Подбор",
-  sent: "Отправлено",
-  thinking: "Клиент думает",
-  booked: "Бронь",
-  rejected: "Отказ"
-};
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
@@ -112,11 +118,7 @@ export function TravelRequestDetailPage() {
   }
 
   if (requestQuery.isLoading) {
-    return (
-      <section className="rounded-lg border bg-card p-6 text-sm text-muted-foreground shadow-sm">
-        Загружаем заявку...
-      </section>
-    );
+    return <LoadingState text="Загружаем заявку..." />;
   }
 
   if (requestQuery.isError) {
@@ -125,9 +127,7 @@ export function TravelRequestDetailPage() {
         <Link className="text-sm font-medium text-primary" to="/clients">
           Назад к клиентам
         </Link>
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700 shadow-sm">
-          {getErrorMessage(requestQuery.error)}
-        </div>
+        <ErrorState message={getErrorMessage(requestQuery.error)} />
       </section>
     );
   }
@@ -153,9 +153,7 @@ export function TravelRequestDetailPage() {
             <h2 className="text-3xl font-semibold tracking-normal">
               {request.destination || "Заявка без направления"}
             </h2>
-            <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-              {statusLabels[request.status]}
-            </span>
+            <TravelRequestStatusBadge status={request.status} />
           </div>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             Параметры поездки по {clientName}. Здесь агент уточняет вводные перед
@@ -163,8 +161,8 @@ export function TravelRequestDetailPage() {
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            className="rounded-md border bg-card px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          <Button
+            variant="outline"
             type="button"
             onClick={() => {
               setFormError(null);
@@ -172,26 +170,25 @@ export function TravelRequestDetailPage() {
             }}
           >
             {isEditing ? "Закрыть форму" : "Редактировать"}
-          </button>
-          <button
-            className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+          </Button>
+          <Button
             disabled={deleteMutation.isPending}
+            variant="destructive"
             type="button"
             onClick={handleDelete}
           >
             {deleteMutation.isPending ? "Удаляем..." : "Удалить"}
-          </button>
+          </Button>
         </div>
       </div>
 
       {deleteMutation.isError ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {getErrorMessage(deleteMutation.error)}
-        </div>
+        <ErrorState message={getErrorMessage(deleteMutation.error)} />
       ) : null}
 
       {isEditing ? (
-        <div className="rounded-lg border bg-card p-5 shadow-sm">
+        <Card>
+          <CardContent className="p-5">
           <h3 className="mb-5 text-lg font-semibold">Данные заявки</h3>
           <TravelRequestForm
             error={formError}
@@ -201,7 +198,8 @@ export function TravelRequestDetailPage() {
             onCancel={() => setIsEditing(false)}
             onSubmit={handleUpdate}
           />
-        </div>
+          </CardContent>
+        </Card>
       ) : (
         <TravelRequestSummary request={request} />
       )}
@@ -219,7 +217,8 @@ export function TravelRequestDetailPage() {
 function TravelRequestSummary({ request }: { request: TravelRequest }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-      <div className="rounded-lg border bg-card p-5 shadow-sm">
+      <Card>
+        <CardContent className="p-5">
         <h3 className="text-lg font-semibold">Параметры поездки</h3>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
           <Info label="Направление" value={request.destination} />
@@ -231,14 +230,17 @@ function TravelRequestSummary({ request }: { request: TravelRequest }) {
           <Info label="Тип поездки" value={request.travelType} />
           <Info label="Возраст детей" value={request.childrenAges.join(", ")} />
         </dl>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="rounded-lg border bg-card p-5 shadow-sm">
+      <Card>
+        <CardContent className="p-5">
         <h3 className="text-lg font-semibold">Контекст подбора</h3>
         <TextBlock label="Пожелания" value={request.wishes} />
         <TextBlock label="Ограничения" value={request.restrictions} />
         <TextBlock label="Внутренний комментарий" value={request.internalComment} />
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -355,7 +357,8 @@ function TourOptionsPanel({
   const options = optionsQuery.data ?? [];
 
   return (
-    <div className="rounded-lg border bg-card p-5 shadow-sm">
+    <Card>
+      <CardContent className="p-5">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold">Варианты тура</h3>
@@ -363,8 +366,7 @@ function TourOptionsPanel({
             Подборки для этой заявки: отели, питание, цена и рабочие плюсы/минусы.
           </p>
         </div>
-        <button
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+        <Button
           type="button"
           onClick={() => {
             setFormError(null);
@@ -373,7 +375,7 @@ function TourOptionsPanel({
           }}
         >
           {isCreateOpen ? "Скрыть форму" : "Добавить вариант"}
-        </button>
+        </Button>
       </div>
 
       {isCreateOpen ? (
@@ -389,9 +391,9 @@ function TourOptionsPanel({
       ) : null}
 
       {mutationError ? (
-        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {mutationError}
-        </div>
+        <Alert className="mb-4" variant="destructive">
+          <AlertDescription>{mutationError}</AlertDescription>
+        </Alert>
       ) : null}
 
       {optionsQuery.isLoading ? (
@@ -399,9 +401,9 @@ function TourOptionsPanel({
       ) : null}
 
       {optionsQuery.isError ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {getErrorMessage(optionsQuery.error)}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{getErrorMessage(optionsQuery.error)}</AlertDescription>
+        </Alert>
       ) : null}
 
       {!optionsQuery.isLoading && !optionsQuery.isError && options.length === 0 ? (
@@ -444,7 +446,8 @@ function TourOptionsPanel({
           )}
         </div>
       ) : null}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -460,15 +463,14 @@ function TourOptionCard({
   onEdit: (option: TourOption) => void;
 }) {
   return (
-    <article className="rounded-lg border bg-background p-4 transition hover:border-primary/40 hover:bg-muted/30">
+    <Card className="bg-background transition hover:border-primary/40 hover:bg-muted/30">
+      <CardContent className="p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="font-semibold">{option.title}</h4>
             {option.isRecommended ? (
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
-                Рекомендованный
-              </span>
+              <Badge variant="emerald">Рекомендованный</Badge>
             ) : null}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -476,21 +478,17 @@ function TourOptionCard({
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            className="rounded-md border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            type="button"
-            onClick={() => onEdit(option)}
-          >
+          <Button variant="outline" type="button" onClick={() => onEdit(option)}>
             Редактировать
-          </button>
-          <button
-            className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+          </Button>
+          <Button
             disabled={isDeleting}
+            variant="destructive"
             type="button"
             onClick={() => onDelete(option)}
           >
             {isDeleting ? "Удаляем..." : "Удалить"}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -520,7 +518,8 @@ function TourOptionCard({
           </p>
         </div>
       ) : null}
-    </article>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -736,7 +735,8 @@ function ProposalsPanel({
   const options = optionsQuery.data ?? [];
 
   return (
-    <div className="rounded-lg border bg-card p-5 shadow-sm">
+    <Card>
+      <CardContent className="p-5">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold">Предложения</h3>
@@ -745,8 +745,8 @@ function ProposalsPanel({
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            className="rounded-md border bg-card px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          <Button
+            variant="outline"
             type="button"
             onClick={() => {
               setGenerationError(null);
@@ -754,9 +754,8 @@ function ProposalsPanel({
             }}
           >
             {isGenerateOpen ? "Скрыть AI" : "Сгенерировать черновик"}
-          </button>
-          <button
-            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+          </Button>
+          <Button
             type="button"
             onClick={() => {
               setFormError(null);
@@ -768,46 +767,50 @@ function ProposalsPanel({
             }}
           >
             {isCreateOpen ? "Скрыть форму" : "Создать предложение"}
-          </button>
+          </Button>
         </div>
       </div>
 
       {isGenerateOpen ? (
         <div className="mb-5 rounded-lg border bg-background p-4">
           <div className="grid gap-4 lg:grid-cols-[180px_180px_1fr]">
-            <label className="grid gap-2 text-sm font-medium">
-              Тон
-              <select
-                className="rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+            <FormField label="Тон">
+              <Select
                 value={generationTone}
-                onChange={(event) =>
-                  setGenerationTone(event.target.value as ProposalTone)
-                }
+                onValueChange={(value) => setGenerationTone(value as ProposalTone)}
               >
-                {proposalTones.map((tone) => (
-                  <option key={tone.value} value={tone.value}>
-                    {tone.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {proposalTones.map((tone) => (
+                    <SelectItem key={tone.value} value={tone.value}>
+                      {tone.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
 
-            <label className="grid gap-2 text-sm font-medium">
-              Формат
-              <select
-                className="rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+            <FormField label="Формат">
+              <Select
                 value={generationFormat}
-                onChange={(event) =>
-                  setGenerationFormat(event.target.value as ProposalFormat)
+                onValueChange={(value) =>
+                  setGenerationFormat(value as ProposalFormat)
                 }
               >
-                {proposalFormats.map((format) => (
-                  <option key={format.value} value={format.value}>
-                    {format.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {proposalFormats.map((format) => (
+                    <SelectItem key={format.value} value={format.value}>
+                      {format.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
 
             <div className="grid gap-2 text-sm font-medium">
               Варианты тура
@@ -817,9 +820,9 @@ function ProposalsPanel({
                 </p>
               ) : null}
               {optionsQuery.isError ? (
-                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {getErrorMessage(optionsQuery.error)}
-                </p>
+                <Alert variant="destructive">
+                  <AlertDescription>{getErrorMessage(optionsQuery.error)}</AlertDescription>
+                </Alert>
               ) : null}
               {!optionsQuery.isLoading && !optionsQuery.isError ? (
                 <div className="flex flex-wrap gap-2">
@@ -848,28 +851,27 @@ function ProposalsPanel({
           </div>
 
           {generationError ? (
-            <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {generationError}
-            </div>
+            <Alert className="mt-4" variant="destructive">
+              <AlertDescription>{generationError}</AlertDescription>
+            </Alert>
           ) : null}
 
           <div className="mt-4 flex justify-end">
-            <button
-              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+            <Button
               disabled={generateMutation.isPending}
               type="button"
               onClick={() => generateMutation.mutate()}
             >
               {generateMutation.isPending ? "Генерируем..." : "Создать AI-черновик"}
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
 
       {generationSummary ? (
-        <div className="mb-4 rounded-md border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-          {generationSummary}
-        </div>
+        <Alert className="mb-4 border-sky-200 bg-sky-50 text-sky-800">
+          <AlertDescription>{generationSummary}</AlertDescription>
+        </Alert>
       ) : null}
 
       {isCreateOpen ? (
@@ -887,18 +889,18 @@ function ProposalsPanel({
       ) : null}
 
       {mutationError ? (
-        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {mutationError}
-        </div>
+        <Alert className="mb-4" variant="destructive">
+          <AlertDescription>{mutationError}</AlertDescription>
+        </Alert>
       ) : null}
 
       {copyMessage ? (
-        <div
+        <Alert
           aria-live="polite"
-          className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          className="mb-4 border-emerald-200 bg-emerald-50 text-emerald-800"
         >
-          {copyMessage}
-        </div>
+          <AlertDescription>{copyMessage}</AlertDescription>
+        </Alert>
       ) : null}
 
       {proposalsQuery.isLoading ? (
@@ -906,9 +908,9 @@ function ProposalsPanel({
       ) : null}
 
       {proposalsQuery.isError ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {getErrorMessage(proposalsQuery.error)}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{getErrorMessage(proposalsQuery.error)}</AlertDescription>
+        </Alert>
       ) : null}
 
       {!proposalsQuery.isLoading && !proposalsQuery.isError && proposals.length === 0 ? (
@@ -954,7 +956,8 @@ function ProposalsPanel({
           )}
         </div>
       ) : null}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -999,16 +1002,14 @@ function ProposalForm({
   return (
     <form className="grid gap-4" onSubmit={handleSubmit}>
       {(error || validationError) ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {validationError ?? error}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{validationError ?? error}</AlertDescription>
+        </Alert>
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_180px]">
-        <label className="grid gap-2 text-sm font-medium">
-          Название
-          <input
-            className="rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+        <FormField label="Название">
+          <Input
             maxLength={180}
             placeholder="Например, Турция для семьи"
             value={values.title}
@@ -1016,65 +1017,72 @@ function ProposalForm({
               setValues((current) => ({ ...current, title: event.target.value }))
             }
           />
-        </label>
+        </FormField>
 
-        <label className="grid gap-2 text-sm font-medium">
-          Формат
-          <select
-            className="rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+        <FormField label="Формат">
+          <Select
             value={values.format}
-            onChange={(event) =>
+            onValueChange={(value) =>
               setValues((current) => ({
                 ...current,
-                format: event.target.value as ProposalFormat
+                format: value as ProposalFormat
               }))
             }
           >
-            {proposalFormats.map((format) => (
-              <option key={format.value} value={format.value}>
-                {format.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {proposalFormats.map((format) => (
+                <SelectItem key={format.value} value={format.value}>
+                  {format.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormField>
       </div>
 
-      <label className="grid gap-2 text-sm font-medium">
-        Текст предложения
-        <textarea
-          className="min-h-56 rounded-md border bg-background px-3 py-2 text-sm leading-6 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+      <FormField label="Текст предложения">
+        <Textarea
+          className="min-h-56 leading-6"
           placeholder="Напишите текст, который агент затем скопирует и отправит клиенту вручную."
           value={values.content}
           onChange={(event) =>
             setValues((current) => ({ ...current, content: event.target.value }))
           }
         />
-      </label>
+      </FormField>
 
-      <div className="rounded-md border bg-card p-4">
-        <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
-          Превью
-        </p>
-        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground">
-          {values.content.trim() || "Текст предложения появится здесь."}
-        </p>
-      </div>
+      <Tabs defaultValue="edit">
+        <TabsList>
+          <TabsTrigger value="edit">Редактирование</TabsTrigger>
+          <TabsTrigger value="preview">Превью</TabsTrigger>
+        </TabsList>
+        <TabsContent value="edit">
+          <Card className="bg-background p-4 text-sm text-muted-foreground">
+            AI-текст остается черновиком: сохраните только после ручной проверки.
+          </Card>
+        </TabsContent>
+        <TabsContent value="preview">
+          <Card className="bg-card p-4">
+            <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
+              Превью
+            </p>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground">
+              {values.content.trim() || "Текст предложения появится здесь."}
+            </p>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-        <button
-          className="rounded-md border bg-card px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          type="button"
-          onClick={onCancel}
-        >
+        <Button variant="outline" type="button" onClick={onCancel}>
           Отмена
-        </button>
-        <button
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isSubmitting}
-          type="submit"
-        >
+        </Button>
+        <Button disabled={isSubmitting} type="submit">
           {isSubmitting ? "Сохраняем..." : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -1096,46 +1104,39 @@ function ProposalCard({
   onEdit: (proposal: Proposal) => void;
 }) {
   return (
-    <article className="rounded-lg border bg-background p-4 transition hover:border-primary/40 hover:bg-muted/30">
+    <Card className="bg-background transition hover:border-primary/40 hover:bg-muted/30">
+      <CardContent className="p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="font-semibold">{proposal.title}</h4>
-            <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-800">
+            <Badge variant="sky">
               {proposalFormatLabels[proposal.format]}
-            </span>
+            </Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             Обновлено {formatDateTime(proposal.updatedAt)}
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
-              isCopied
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
+          <Button
+            variant={isCopied ? "secondary" : "outline"}
             type="button"
             onClick={() => onCopy(proposal)}
           >
             {isCopied ? "Скопировано" : "Скопировать"}
-          </button>
-          <button
-            className="rounded-md border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            type="button"
-            onClick={() => onEdit(proposal)}
-          >
+          </Button>
+          <Button variant="outline" type="button" onClick={() => onEdit(proposal)}>
             Редактировать
-          </button>
-          <button
-            className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+          </Button>
+          <Button
             disabled={isDeleting}
+            variant="destructive"
             type="button"
             onClick={() => onDelete(proposal)}
           >
             {isDeleting ? "Удаляем..." : "Удалить"}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -1147,7 +1148,8 @@ function ProposalCard({
           {proposal.content}
         </p>
       </div>
-    </article>
+      </CardContent>
+    </Card>
   );
 }
 

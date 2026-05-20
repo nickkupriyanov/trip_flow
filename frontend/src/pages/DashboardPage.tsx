@@ -3,6 +3,9 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { useAuth } from "@/auth/AuthContext";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   ApiError,
   fetchClients,
@@ -17,6 +20,8 @@ import {
   type TravelRequestStatus
 } from "@/lib/api";
 import { PageHeader } from "@/pages/components/PageHeader";
+import { ErrorState } from "@/pages/components/Feedback";
+import { TravelRequestStatusBadge } from "@/pages/components/StatusBadge";
 
 const inProgressStatuses: TravelRequestStatus[] = [
   "clarifying",
@@ -24,26 +29,6 @@ const inProgressStatuses: TravelRequestStatus[] = [
   "sent",
   "thinking"
 ];
-
-const statusLabels: Record<TravelRequestStatus, string> = {
-  new: "Новая",
-  clarifying: "Уточнение",
-  searching: "Подбор",
-  sent: "Отправлено",
-  thinking: "Клиент думает",
-  booked: "Бронь",
-  rejected: "Отказ"
-};
-
-const statusTones: Record<TravelRequestStatus, string> = {
-  new: "border-sky-200 bg-sky-50 text-sky-800",
-  clarifying: "border-amber-200 bg-amber-50 text-amber-800",
-  searching: "border-teal-200 bg-teal-50 text-teal-800",
-  sent: "border-indigo-200 bg-indigo-50 text-indigo-800",
-  thinking: "border-violet-200 bg-violet-50 text-violet-800",
-  booked: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  rejected: "border-rose-200 bg-rose-50 text-rose-800"
-};
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
@@ -174,12 +159,9 @@ export function DashboardPage() {
           title="Дашборд"
           description="Короткая сводка на день: follow-up, новые заявки и клиенты, к которым удобно вернуться."
         />
-        <Link
-          className="w-full rounded-md bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 sm:w-auto"
-          to="/reminders"
-        >
-          Все напоминания
-        </Link>
+        <Button asChild className="w-full sm:w-auto">
+          <Link to="/reminders">Все напоминания</Link>
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -204,14 +186,14 @@ export function DashboardPage() {
       </div>
 
       {hasLoadError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm">
-          {getErrorMessage(
+        <ErrorState
+          message={getErrorMessage(
             remindersQuery.error ??
               pipelineQuery.error ??
               clientsQuery.error ??
               doneMutation.error,
           )}
-        </div>
+        />
       ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
@@ -302,11 +284,13 @@ function OverviewCard({
   value: number;
 }) {
   return (
-    <article className="rounded-lg border bg-card p-5 shadow-sm">
+    <Card>
+      <CardContent className="p-5">
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
       <p className="mt-3 text-3xl font-semibold">{isLoading ? "..." : value}</p>
       <p className="mt-2 text-sm text-muted-foreground">{note}</p>
-    </article>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -322,7 +306,8 @@ function DashboardPanel({
   title: string;
 }) {
   return (
-    <section className="rounded-lg border bg-card p-5 shadow-sm">
+    <Card>
+      <CardContent className="p-5">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold">{title}</h3>
@@ -333,7 +318,8 @@ function DashboardPanel({
         {action}
       </div>
       {children}
-    </section>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -351,13 +337,12 @@ function ReminderRow({
   const client = clients.find((item) => item.id === reminder.clientId);
 
   return (
-    <article className="rounded-lg border bg-background p-4">
+    <Card className="bg-background">
+      <CardContent className="p-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-800">
-              {formatTime(reminder.dueAt)}
-            </span>
+            <Badge variant="sky">{formatTime(reminder.dueAt)}</Badge>
             {reminder.clientId ? (
               <Link
                 className="text-sm font-medium text-muted-foreground hover:text-primary"
@@ -384,25 +369,24 @@ function ReminderRow({
             </p>
           ) : null}
         </div>
-        <button
-          className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+        <Button
           disabled={isMarkingDone}
+          variant="secondary"
           type="button"
           onClick={() => onMarkDone(reminder)}
         >
           Готово
-        </button>
+        </Button>
       </div>
-    </article>
+      </CardContent>
+    </Card>
   );
 }
 
 function ClientRow({ client }: { client: Client }) {
   return (
-    <Link
-      className="block rounded-lg border bg-background p-4 transition hover:border-primary/40 hover:bg-muted/30"
-      to={`/clients/${client.id}`}
-    >
+    <Card className="bg-background transition hover:border-primary/40 hover:bg-muted/30">
+      <Link className="block p-4" to={`/clients/${client.id}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h4 className="truncate text-sm font-semibold">{client.fullName}</h4>
@@ -414,7 +398,8 @@ function ClientRow({ client }: { client: Client }) {
           {formatDate(client.createdAt)}
         </span>
       </div>
-    </Link>
+      </Link>
+    </Card>
   );
 }
 
@@ -458,10 +443,8 @@ function RequestsPanel({
 
 function RequestRow({ request }: { request: PipelineTravelRequest }) {
   return (
-    <Link
-      className="block rounded-lg border bg-background p-4 transition hover:border-primary/40 hover:bg-muted/30"
-      to={`/requests/${request.id}`}
-    >
+    <Card className="bg-background transition hover:border-primary/40 hover:bg-muted/30">
+      <Link className="block p-4" to={`/requests/${request.id}`}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="text-xs font-medium text-muted-foreground">
@@ -474,21 +457,18 @@ function RequestRow({ request }: { request: PipelineTravelRequest }) {
             {formatRequestMeta(request)}
           </p>
         </div>
-        <span
-          className={`w-fit shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${statusTones[request.status]}`}
-        >
-          {statusLabels[request.status]}
-        </span>
+        <TravelRequestStatusBadge status={request.status} />
       </div>
-    </Link>
+      </Link>
+    </Card>
   );
 }
 
 function LoadingLine({ text }: { text: string }) {
   return (
-    <div className="rounded-lg border bg-background p-4 text-sm text-muted-foreground">
+    <Card className="bg-background p-4 text-sm text-muted-foreground">
       {text}
-    </div>
+    </Card>
   );
 }
 
@@ -500,11 +480,11 @@ function PanelEmpty({
   title: string;
 }) {
   return (
-    <div className="rounded-md border border-dashed bg-background px-4 py-6 text-center">
+    <Card className="border-dashed bg-background px-4 py-6 text-center">
       <h4 className="text-sm font-semibold">{title}</h4>
       <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
         {description}
       </p>
-    </div>
+    </Card>
   );
 }

@@ -3,6 +3,18 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 
 import { useAuth } from "@/auth/AuthContext";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
 import {
   ApiError,
   createClient,
@@ -11,6 +23,8 @@ import {
 } from "@/lib/api";
 import { ClientForm } from "@/pages/components/ClientForm";
 import { EmptyState } from "@/pages/components/EmptyState";
+import { ErrorState, LoadingState } from "@/pages/components/Feedback";
+import { FormField } from "@/pages/components/FormField";
 import { PageHeader } from "@/pages/components/PageHeader";
 
 function getErrorMessage(error: unknown): string {
@@ -57,8 +71,8 @@ export function ClientsPage() {
           title="Клиенты"
           description="Контакты, заметки и предпочтения клиентов перед созданием заявок на путешествие."
         />
-        <button
-          className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 sm:w-auto"
+        <Button
+          className="w-full sm:w-auto"
           type="button"
           onClick={() => {
             setFormError(null);
@@ -66,49 +80,47 @@ export function ClientsPage() {
           }}
         >
           {isCreateOpen ? "Скрыть форму" : "Добавить клиента"}
-        </button>
+        </Button>
       </div>
 
       {isCreateOpen ? (
-        <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <div className="mb-5">
-            <h3 className="text-lg font-semibold">Новый клиент</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+        <Card>
+          <CardHeader>
+            <CardTitle>Новый клиент</CardTitle>
+            <CardDescription>
               Заполните минимум имя. Контакты и теги помогут быстрее найти клиента позже.
-            </p>
-          </div>
-          <ClientForm
-            error={formError}
-            isSubmitting={createMutation.isPending}
-            submitLabel="Создать клиента"
-            onCancel={() => setIsCreateOpen(false)}
-            onSubmit={handleCreate}
-          />
-        </div>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ClientForm
+              error={formError}
+              isSubmitting={createMutation.isPending}
+              submitLabel="Создать клиента"
+              onCancel={() => setIsCreateOpen(false)}
+              onSubmit={handleCreate}
+            />
+          </CardContent>
+        </Card>
       ) : null}
 
-      <div className="rounded-lg border bg-card p-4 shadow-sm">
-        <label className="block space-y-2">
-          <span className="text-sm font-medium">Поиск</span>
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+      <Card>
+        <CardContent className="pt-5">
+          <FormField label="Поиск">
+            <Input
             placeholder="Имя, телефон, email, Telegram, город или источник"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-          />
-        </label>
-      </div>
+            />
+          </FormField>
+        </CardContent>
+      </Card>
 
       {clientsQuery.isLoading ? (
-        <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground shadow-sm">
-          Загружаем клиентов...
-        </div>
+        <LoadingState text="Загружаем клиентов..." />
       ) : null}
 
       {clientsQuery.isError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700 shadow-sm">
-          {getErrorMessage(clientsQuery.error)}
-        </div>
+        <ErrorState message={getErrorMessage(clientsQuery.error)} />
       ) : null}
 
       {!clientsQuery.isLoading && !clientsQuery.isError && clients.length === 0 ? (
@@ -123,21 +135,20 @@ export function ClientsPage() {
       ) : null}
 
       {clients.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="border-b bg-muted/60 text-xs uppercase tracking-normal text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Клиент</th>
-                  <th className="px-4 py-3 font-semibold">Контакты</th>
-                  <th className="px-4 py-3 font-semibold">Город / источник</th>
-                  <th className="px-4 py-3 font-semibold">Теги</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
+        <Card className="overflow-hidden">
+          <Table className="min-w-[760px]">
+              <TableHeader className="bg-muted/60">
+                <TableRow>
+                  <TableHead>Клиент</TableHead>
+                  <TableHead>Контакты</TableHead>
+                  <TableHead>Город / источник</TableHead>
+                  <TableHead>Теги</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {clients.map((client) => (
-                  <tr key={client.id} className="transition hover:bg-muted/40">
-                    <td className="px-4 py-4 align-top">
+                  <TableRow key={client.id}>
+                    <TableCell>
                       <Link
                         className="font-semibold text-foreground hover:text-primary"
                         to={`/clients/${client.id}`}
@@ -149,38 +160,34 @@ export function ClientsPage() {
                           {client.notes}
                         </p>
                       ) : null}
-                    </td>
-                    <td className="px-4 py-4 align-top text-muted-foreground">
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
                       <ContactLine value={client.phone} />
                       <ContactLine value={client.email} />
                       <ContactLine value={client.telegram} />
-                    </td>
-                    <td className="px-4 py-4 align-top text-muted-foreground">
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
                       <ContactLine value={client.city} />
                       <ContactLine value={client.source} />
-                    </td>
-                    <td className="px-4 py-4 align-top">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex max-w-xs flex-wrap gap-1.5">
                         {client.tags.length > 0 ? (
                           client.tags.map((tag) => (
-                            <span
-                              className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"
-                              key={tag}
-                            >
+                            <Badge key={tag} variant="secondary">
                               {tag}
-                            </span>
+                            </Badge>
                           ))
                         ) : (
                           <span className="text-sm text-muted-foreground">Без тегов</span>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </TableBody>
+            </Table>
+        </Card>
       ) : null}
     </section>
   );

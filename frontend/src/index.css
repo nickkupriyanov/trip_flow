@@ -13,6 +13,11 @@
     --primary: 190 62% 30%;
     --primary-foreground: 0 0% 100%;
     --border: 200 22% 86%;
+    --input: 200 22% 86%;
+    --ring: 190 62% 30%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --radius: 0.5rem;
   }
 
   * {

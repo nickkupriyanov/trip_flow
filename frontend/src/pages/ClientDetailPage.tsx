@@ -6,6 +6,18 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
 
 import { useAuth } from "@/auth/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import {
   ApiError,
   createTravelRequest,
@@ -21,12 +33,14 @@ import {
   type ClientPreferenceInput,
   type HotelLevel,
   type TravelRequest,
-  type TravelRequestInput,
-  type TravelRequestStatus
+  type TravelRequestInput
 } from "@/lib/api";
 import { ClientForm } from "@/pages/components/ClientForm";
 import { CommunicationNotesPanel } from "@/pages/components/CommunicationNotesPanel";
 import { EmptyState } from "@/pages/components/EmptyState";
+import { ErrorState, LoadingState } from "@/pages/components/Feedback";
+import { FormField } from "@/pages/components/FormField";
+import { TravelRequestStatusBadge } from "@/pages/components/StatusBadge";
 import { TravelRequestForm } from "@/pages/components/TravelRequestForm";
 
 const preferenceSchema = z.object({
@@ -123,11 +137,7 @@ export function ClientDetailPage() {
   }
 
   if (clientQuery.isLoading) {
-    return (
-      <section className="rounded-lg border bg-card p-6 text-sm text-muted-foreground shadow-sm">
-        Загружаем клиента...
-      </section>
-    );
+    return <LoadingState text="Загружаем клиента..." />;
   }
 
   if (clientQuery.isError) {
@@ -136,9 +146,7 @@ export function ClientDetailPage() {
         <Link className="text-sm font-medium text-primary" to="/clients">
           Назад к клиентам
         </Link>
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700 shadow-sm">
-          {getErrorMessage(clientQuery.error)}
-        </div>
+        <ErrorState message={getErrorMessage(clientQuery.error)} />
       </section>
     );
   }
@@ -163,8 +171,8 @@ export function ClientDetailPage() {
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            className="rounded-md border bg-card px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          <Button
+            variant="outline"
             type="button"
             onClick={() => {
               setClientError(null);
@@ -172,36 +180,38 @@ export function ClientDetailPage() {
             }}
           >
             {isEditingClient ? "Закрыть форму" : "Редактировать"}
-          </button>
-          <button
-            className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+          </Button>
+          <Button
             disabled={deleteMutation.isPending}
+            variant="destructive"
             type="button"
             onClick={handleDelete}
           >
             {deleteMutation.isPending ? "Удаляем..." : "Удалить"}
-          </button>
+          </Button>
         </div>
       </div>
 
       {deleteMutation.isError ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {getErrorMessage(deleteMutation.error)}
-        </div>
+        <ErrorState message={getErrorMessage(deleteMutation.error)} />
       ) : null}
 
       {isEditingClient ? (
-        <div className="rounded-lg border bg-card p-5 shadow-sm">
-          <h3 className="mb-5 text-lg font-semibold">Данные клиента</h3>
-          <ClientForm
-            client={client}
-            error={clientError}
-            isSubmitting={updateMutation.isPending}
-            submitLabel="Сохранить клиента"
-            onCancel={() => setIsEditingClient(false)}
-            onSubmit={handleClientUpdate}
-          />
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Данные клиента</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ClientForm
+              client={client}
+              error={clientError}
+              isSubmitting={updateMutation.isPending}
+              submitLabel="Сохранить клиента"
+              onCancel={() => setIsEditingClient(false)}
+              onSubmit={handleClientUpdate}
+            />
+          </CardContent>
+        </Card>
       ) : (
         <ClientSummary client={client} />
       )}
@@ -227,9 +237,12 @@ export function ClientDetailPage() {
 function ClientSummary({ client }: { client: Client }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-      <div className="rounded-lg border bg-card p-5 shadow-sm">
-        <h3 className="text-lg font-semibold">Контакты</h3>
-        <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>Контакты</CardTitle>
+        </CardHeader>
+        <CardContent>
+        <dl className="grid gap-4 sm:grid-cols-2">
           <Info label="Телефон" value={client.phone} />
           <Info label="Email" value={client.email} />
           <Info label="Telegram" value={client.telegram} />
@@ -237,28 +250,30 @@ function ClientSummary({ client }: { client: Client }) {
           <Info label="Город" value={client.city} />
           <Info label="Источник" value={client.source} />
         </dl>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="rounded-lg border bg-card p-5 shadow-sm">
-        <h3 className="text-lg font-semibold">Заметки</h3>
-        <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
+      <Card>
+        <CardHeader>
+          <CardTitle>Заметки</CardTitle>
+        </CardHeader>
+        <CardContent>
+        <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
           {client.notes || "Заметок пока нет."}
         </p>
         <div className="mt-5 flex flex-wrap gap-1.5">
           {client.tags.length > 0 ? (
             client.tags.map((tag) => (
-              <span
-                className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"
-                key={tag}
-              >
+              <Badge key={tag} variant="secondary">
                 {tag}
-              </span>
+              </Badge>
             ))
           ) : (
             <span className="text-sm text-muted-foreground">Без тегов</span>
           )}
         </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -328,131 +343,121 @@ function PreferencePanel({
   }
 
   return (
-    <div className="rounded-lg border bg-card p-5 shadow-sm">
-      <div className="mb-5">
-        <h3 className="text-lg font-semibold">Предпочтения</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
+    <Card>
+      <CardHeader>
+        <CardTitle>Предпочтения</CardTitle>
+        <CardDescription>
           Рабочие подсказки для будущих заявок и подбора туров.
-        </p>
-      </div>
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Загружаем предпочтения...</p>
       ) : null}
 
       {error ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
 
       {!isLoading && !error ? (
         <form className="space-y-4" onSubmit={form.handleSubmit(handleSubmit)}>
           {formError ? (
-            <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {formError}
-            </div>
+            <Alert variant="destructive">
+              <AlertDescription>{formError}</AlertDescription>
+            </Alert>
           ) : null}
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Любимые направления">
-              <input
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+            <FormField label="Любимые направления">
+              <Input
                 placeholder="Турция, Греция"
                 {...form.register("preferredDestinationsText")}
               />
-            </Field>
-            <Field label="Не любит">
-              <input
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+            </FormField>
+            <FormField label="Не любит">
+              <Input
                 placeholder="шумные города, долгие перелёты"
                 {...form.register("dislikedDestinationsText")}
               />
-            </Field>
-            <Field label="Уровень отеля">
-              <select
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-                {...form.register("preferredHotelLevel")}
+            </FormField>
+            <FormField label="Уровень отеля">
+              <Select
+                value={form.watch("preferredHotelLevel") || "none"}
+                onValueChange={(value) =>
+                  form.setValue("preferredHotelLevel", value === "none" ? "" : value as HotelLevel, {
+                    shouldDirty: true,
+                    shouldValidate: true
+                  })
+                }
               >
-                <option value="">Не указан</option>
-                <option value="3*">3*</option>
-                <option value="4*">4*</option>
-                <option value="5*">5*</option>
-                <option value="luxury">luxury</option>
-              </select>
-            </Field>
-            <Field label="Питание">
-              <input
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Не указан</SelectItem>
+                  <SelectItem value="3*">3*</SelectItem>
+                  <SelectItem value="4*">4*</SelectItem>
+                  <SelectItem value="5*">5*</SelectItem>
+                  <SelectItem value="luxury">luxury</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
+            <FormField label="Питание">
+              <Input
                 placeholder="AI, завтраки"
                 {...form.register("mealPreferencesText")}
               />
-            </Field>
-            <Field label="Стиль поездки">
-              <input
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+            </FormField>
+            <FormField label="Стиль поездки">
+              <Input
                 placeholder="семейный пляж, спокойный отдых"
                 {...form.register("travelStyleText")}
               />
-            </Field>
-            <Field label="Важные факторы">
-              <input
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+            </FormField>
+            <FormField label="Важные факторы">
+              <Input
                 placeholder="детский клуб, короткий трансфер"
                 {...form.register("importantFactorsText")}
               />
-            </Field>
-            <Field label="Избегать">
-              <input
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+            </FormField>
+            <FormField label="Избегать">
+              <Input
                 placeholder="лестницы, шумная анимация"
                 {...form.register("avoidFactorsText")}
               />
-            </Field>
+            </FormField>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Бюджет от">
-                <input
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+              <FormField label="Бюджет от">
+                <Input
                   min="0"
                   type="number"
                   {...form.register("averageBudgetMin")}
                 />
-              </Field>
-              <Field label="Бюджет до">
-                <input
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+              </FormField>
+              <FormField label="Бюджет до">
+                <Input
                   min="0"
                   type="number"
                   {...form.register("averageBudgetMax")}
                 />
-              </Field>
+              </FormField>
             </div>
           </div>
 
           <div className="flex justify-end">
-            <button
-              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={mutation.isPending}
-              type="submit"
-            >
+            <Button disabled={mutation.isPending} type="submit">
               {mutation.isPending ? "Сохраняем..." : "Сохранить предпочтения"}
-            </button>
+            </Button>
           </div>
         </form>
       ) : null}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
-
-const requestStatusLabels: Record<TravelRequestStatus, string> = {
-  new: "Новая",
-  clarifying: "Уточнение",
-  searching: "Подбор",
-  sent: "Отправлено",
-  thinking: "Клиент думает",
-  booked: "Бронь",
-  rejected: "Отказ"
-};
 
 function RequestsPanel({ clientId, token }: { clientId: string; token: string }) {
   const navigate = useNavigate();
@@ -484,7 +489,8 @@ function RequestsPanel({ clientId, token }: { clientId: string; token: string })
   const requests = requestsQuery.data ?? [];
 
   return (
-    <div className="rounded-lg border bg-card p-5 shadow-sm">
+    <Card>
+      <CardContent className="p-5">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold">Заявки на путешествия</h3>
@@ -492,8 +498,7 @@ function RequestsPanel({ clientId, token }: { clientId: string; token: string })
             Конкретные поездки клиента: вводные, бюджет, даты и статус работы.
           </p>
         </div>
-        <button
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+        <Button
           type="button"
           onClick={() => {
             setFormError(null);
@@ -501,7 +506,7 @@ function RequestsPanel({ clientId, token }: { clientId: string; token: string })
           }}
         >
           {isCreateOpen ? "Скрыть форму" : "Создать заявку"}
-        </button>
+        </Button>
       </div>
 
       {isCreateOpen ? (
@@ -521,9 +526,9 @@ function RequestsPanel({ clientId, token }: { clientId: string; token: string })
       ) : null}
 
       {requestsQuery.isError ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {getErrorMessage(requestsQuery.error)}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{getErrorMessage(requestsQuery.error)}</AlertDescription>
+        </Alert>
       ) : null}
 
       {!requestsQuery.isLoading && !requestsQuery.isError && requests.length === 0 ? (
@@ -540,16 +545,15 @@ function RequestsPanel({ clientId, token }: { clientId: string; token: string })
           ))}
         </div>
       ) : null}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
 function RequestCard({ request }: { request: TravelRequest }) {
   return (
-    <Link
-      className="block rounded-lg border bg-background p-4 transition hover:border-primary/40 hover:bg-muted/30"
-      to={`/requests/${request.id}`}
-    >
+    <Card className="bg-background transition hover:border-primary/40 hover:bg-muted/30">
+      <Link className="block p-4" to={`/requests/${request.id}`}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h4 className="font-semibold">
@@ -559,16 +563,15 @@ function RequestCard({ request }: { request: TravelRequest }) {
             {formatRequestMeta(request)}
           </p>
         </div>
-        <span className="w-fit rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-          {requestStatusLabels[request.status]}
-        </span>
+        <TravelRequestStatusBadge status={request.status} />
       </div>
       {request.wishes ? (
         <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
           {request.wishes}
         </p>
       ) : null}
-    </Link>
+      </Link>
+    </Card>
   );
 }
 
@@ -609,19 +612,4 @@ function toPreferenceValues(
     averageBudgetMin: preferences?.averageBudgetMin?.toString() ?? "",
     averageBudgetMax: preferences?.averageBudgetMax?.toString() ?? ""
   };
-}
-
-function Field({
-  children,
-  label
-}: {
-  children: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <label className="block space-y-2">
-      <span className="text-sm font-medium">{label}</span>
-      {children}
-    </label>
-  );
 }

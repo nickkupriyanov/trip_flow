@@ -2,6 +2,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ApiError,
   createCommunicationNote,
@@ -14,6 +26,7 @@ import {
   type CommunicationNoteType
 } from "@/lib/api";
 import { EmptyState } from "@/pages/components/EmptyState";
+import { FormField } from "@/pages/components/FormField";
 
 const noteTypes: Array<{ value: CommunicationNoteType; label: string }> = [
   { value: "note", label: "Заметка" },
@@ -31,12 +44,12 @@ const noteTypeLabels: Record<CommunicationNoteType, string> = {
   email: "Email"
 };
 
-const noteTypeTones: Record<CommunicationNoteType, string> = {
-  note: "border-slate-200 bg-slate-50 text-slate-700",
-  call: "border-amber-200 bg-amber-50 text-amber-800",
-  telegram: "border-sky-200 bg-sky-50 text-sky-800",
-  whatsapp: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  email: "border-indigo-200 bg-indigo-50 text-indigo-800"
+const noteTypeVariants: Record<CommunicationNoteType, BadgeProps["variant"]> = {
+  note: "outline",
+  call: "amber",
+  telegram: "sky",
+  whatsapp: "emerald",
+  email: "indigo"
 };
 
 type NoteFormValues = {
@@ -190,7 +203,8 @@ export function CommunicationNotesPanel({
       : "Хронология звонков, сообщений и рабочих заметок по клиенту.";
 
   return (
-    <div className="rounded-lg border bg-card p-5 shadow-sm">
+    <Card>
+      <CardContent className="p-5">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold">{title}</h3>
@@ -198,8 +212,7 @@ export function CommunicationNotesPanel({
             {description}
           </p>
         </div>
-        <button
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+        <Button
           type="button"
           onClick={() => {
             setFormError(null);
@@ -208,7 +221,7 @@ export function CommunicationNotesPanel({
           }}
         >
           {isCreateOpen ? "Скрыть форму" : "Добавить запись"}
-        </button>
+        </Button>
       </div>
 
       {isCreateOpen ? (
@@ -224,9 +237,9 @@ export function CommunicationNotesPanel({
       ) : null}
 
       {mutationError ? (
-        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {mutationError}
-        </div>
+        <Alert className="mb-4" variant="destructive">
+          <AlertDescription>{mutationError}</AlertDescription>
+        </Alert>
       ) : null}
 
       {notesQuery.isLoading ? (
@@ -234,9 +247,9 @@ export function CommunicationNotesPanel({
       ) : null}
 
       {notesQuery.isError ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {getErrorMessage(notesQuery.error)}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{getErrorMessage(notesQuery.error)}</AlertDescription>
+        </Alert>
       ) : null}
 
       {!notesQuery.isLoading && !notesQuery.isError && notes.length === 0 ? (
@@ -283,7 +296,8 @@ export function CommunicationNotesPanel({
           )}
         </div>
       ) : null}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -321,60 +335,54 @@ function CommunicationNoteForm({
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       {error || localError ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error ?? localError}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error ?? localError}</AlertDescription>
+        </Alert>
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-[180px_1fr]">
-        <label className="grid gap-2 text-sm font-medium">
-          Тип
-          <select
-            className="rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+        <FormField label="Тип">
+          <Select
             value={values.type}
-            onChange={(event) =>
+            onValueChange={(value) =>
               setValues((current) => ({
                 ...current,
-                type: event.target.value as CommunicationNoteType
+                type: value as CommunicationNoteType
               }))
             }
           >
-            {noteTypes.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {noteTypes.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormField>
 
-        <label className="grid gap-2 text-sm font-medium">
-          Запись
-          <textarea
-            className="min-h-28 rounded-md border bg-background px-3 py-2 text-sm leading-6 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+        <FormField label="Запись">
+          <Textarea
+            className="min-h-28 leading-6"
             placeholder="Что обсудили, что обещали отправить или что важно помнить"
             value={values.content}
             onChange={(event) =>
               setValues((current) => ({ ...current, content: event.target.value }))
             }
           />
-        </label>
+        </FormField>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-        <button
-          className="rounded-md border bg-card px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          type="button"
-          onClick={onCancel}
-        >
+        <Button variant="outline" type="button" onClick={onCancel}>
           Отмена
-        </button>
-        <button
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isSubmitting}
-          type="submit"
-        >
+        </Button>
+        <Button disabled={isSubmitting} type="submit">
           {isSubmitting ? "Сохраняем..." : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -394,15 +402,14 @@ function CommunicationNoteCard({
   onEdit: (note: CommunicationNote) => void;
 }) {
   return (
-    <article className="rounded-lg border bg-background p-4 transition hover:border-primary/40 hover:bg-muted/30">
+    <Card className="bg-background transition hover:border-primary/40 hover:bg-muted/30">
+      <CardContent className="p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${noteTypeTones[note.type]}`}
-            >
+            <Badge variant={noteTypeVariants[note.type]}>
               {noteTypeLabels[note.type]}
-            </span>
+            </Badge>
             <span className="text-xs text-muted-foreground">
               {formatDateTime(note.createdAt)}
             </span>
@@ -420,23 +427,20 @@ function CommunicationNoteCard({
           </p>
         </div>
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-          <button
-            className="rounded-md border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            type="button"
-            onClick={() => onEdit(note)}
-          >
+          <Button variant="outline" type="button" onClick={() => onEdit(note)}>
             Редактировать
-          </button>
-          <button
-            className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+          </Button>
+          <Button
             disabled={isDeleting}
+            variant="destructive"
             type="button"
             onClick={() => onDelete(note)}
           >
             {isDeleting ? "Удаляем..." : "Удалить"}
-          </button>
+          </Button>
         </div>
       </div>
-    </article>
+      </CardContent>
+    </Card>
   );
 }

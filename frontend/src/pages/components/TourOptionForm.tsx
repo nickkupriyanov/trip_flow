@@ -2,7 +2,19 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import type { Currency, TourOption, TourOptionInput } from "@/lib/api";
+import { FormField } from "@/pages/components/FormField";
 
 const formSchema = z.object({
   title: z.string().trim().min(1, "Укажите название варианта"),
@@ -118,144 +130,139 @@ export function TourOptionForm({
   return (
     <form className="space-y-5" onSubmit={form.handleSubmit(handleSubmit)}>
       {error ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field error={form.formState.errors.title?.message} label="Название">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+        <FormField error={form.formState.errors.title?.message} label="Название">
+          <Input
             placeholder="Семейный вариант в Белеке"
             {...form.register("title")}
           />
-        </Field>
+        </FormField>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Страна">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          <FormField label="Страна">
+            <Input
               placeholder="Турция"
               {...form.register("country")}
             />
-          </Field>
-          <Field label="Курорт">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          </FormField>
+          <FormField label="Курорт">
+            <Input
               placeholder="Белек"
               {...form.register("resort")}
             />
-          </Field>
+          </FormField>
         </div>
-        <Field label="Отель">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+        <FormField label="Отель">
+          <Input
             placeholder="Pine Beach"
             {...form.register("hotelName")}
           />
-        </Field>
+        </FormField>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Звёзд">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          <FormField label="Звёзд">
+            <Input
               max="5"
               min="1"
               type="number"
               {...form.register("hotelStars")}
             />
-          </Field>
-          <Field label="Ночей">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          </FormField>
+          <FormField label="Ночей">
+            <Input
               min="0"
               type="number"
               {...form.register("nights")}
             />
-          </Field>
+          </FormField>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Дата от">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          <FormField label="Дата от">
+            <Input
               type="date"
               {...form.register("dateFrom")}
             />
-          </Field>
-          <Field label="Дата до">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          </FormField>
+          <FormField label="Дата до">
+            <Input
               type="date"
               {...form.register("dateTo")}
             />
-          </Field>
+          </FormField>
         </div>
-        <Field label="Тип номера">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+        <FormField label="Тип номера">
+          <Input
             placeholder="Family room"
             {...form.register("roomType")}
           />
-        </Field>
-        <Field label="Питание">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+        </FormField>
+        <FormField label="Питание">
+          <Input
             placeholder="All inclusive"
             {...form.register("mealType")}
           />
-        </Field>
+        </FormField>
         <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
-          <Field label="Цена">
-            <input
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+          <FormField label="Цена">
+            <Input
               min="0"
               type="number"
               {...form.register("price")}
             />
-          </Field>
-          <Field label="Валюта">
-            <select
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-              {...form.register("currency")}
+          </FormField>
+          <FormField label="Валюта">
+            <Select
+              value={form.watch("currency")}
+              onValueChange={(value) =>
+                form.setValue("currency", value as Currency, {
+                  shouldDirty: true,
+                  shouldValidate: true
+                })
+              }
             >
-              <option value="RUB">RUB</option>
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-            </select>
-          </Field>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="RUB">RUB</SelectItem>
+                <SelectItem value="USD">USD</SelectItem>
+                <SelectItem value="EUR">EUR</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormField>
         </div>
-        <Field label="Ссылка">
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+        <FormField label="Ссылка">
+          <Input
             placeholder="https://..."
             {...form.register("link")}
           />
-        </Field>
+        </FormField>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Плюсы">
-          <textarea
-            className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+        <FormField label="Плюсы">
+          <Textarea
             placeholder="детский клуб, короткий трансфер"
             {...form.register("prosText")}
           />
-        </Field>
-        <Field label="Минусы">
-          <textarea
-            className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+        </FormField>
+        <FormField label="Минусы">
+          <Textarea
             placeholder="дороже бюджета, мало номеров"
             {...form.register("consText")}
           />
-        </Field>
+        </FormField>
       </div>
 
-      <Field label="Комментарий агента">
-        <textarea
-          className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
+      <FormField label="Комментарий агента">
+        <Textarea
           placeholder="Почему вариант подходит или что проверить перед отправкой"
           {...form.register("agentComment")}
         />
-      </Field>
+      </FormField>
 
       <label className="flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm">
         <input
@@ -268,40 +275,14 @@ export function TourOptionForm({
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         {onCancel ? (
-          <button
-            className="rounded-md border bg-card px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            type="button"
-            onClick={onCancel}
-          >
+          <Button variant="outline" type="button" onClick={onCancel}>
             Отмена
-          </button>
+          </Button>
         ) : null}
-        <button
-          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isSubmitting}
-          type="submit"
-        >
+        <Button disabled={isSubmitting} type="submit">
           {isSubmitting ? "Сохраняем..." : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
-  );
-}
-
-function Field({
-  children,
-  error,
-  label
-}: {
-  children: React.ReactNode;
-  error?: string;
-  label: string;
-}) {
-  return (
-    <label className="block space-y-2">
-      <span className="text-sm font-medium">{label}</span>
-      {children}
-      {error ? <span className="block text-xs text-red-700">{error}</span> : null}
-    </label>
   );
 }

@@ -3,6 +3,15 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 
 import { useAuth } from "@/auth/AuthContext";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import {
   ApiError,
   fetchPipeline,
@@ -11,45 +20,22 @@ import {
   type TravelRequestStatus
 } from "@/lib/api";
 import { EmptyState } from "@/pages/components/EmptyState";
+import { ErrorState, LoadingState } from "@/pages/components/Feedback";
 import { PageHeader } from "@/pages/components/PageHeader";
+import {
+  TravelRequestStatusBadge,
+  travelRequestStatusLabels
+} from "@/pages/components/StatusBadge";
 
-const statuses: Array<{ value: TravelRequestStatus; label: string; tone: string }> = [
-  { value: "new", label: "Новая", tone: "border-sky-200 bg-sky-50 text-sky-800" },
-  {
-    value: "clarifying",
-    label: "Уточнение",
-    tone: "border-amber-200 bg-amber-50 text-amber-800"
-  },
-  {
-    value: "searching",
-    label: "Подбор",
-    tone: "border-teal-200 bg-teal-50 text-teal-800"
-  },
-  {
-    value: "sent",
-    label: "Отправлено",
-    tone: "border-indigo-200 bg-indigo-50 text-indigo-800"
-  },
-  {
-    value: "thinking",
-    label: "Клиент думает",
-    tone: "border-violet-200 bg-violet-50 text-violet-800"
-  },
-  {
-    value: "booked",
-    label: "Бронь",
-    tone: "border-emerald-200 bg-emerald-50 text-emerald-800"
-  },
-  {
-    value: "rejected",
-    label: "Отказ",
-    tone: "border-rose-200 bg-rose-50 text-rose-800"
-  }
+const statuses: TravelRequestStatus[] = [
+  "new",
+  "clarifying",
+  "searching",
+  "sent",
+  "thinking",
+  "booked",
+  "rejected"
 ];
-
-const statusLabels = Object.fromEntries(
-  statuses.map((status) => [status.value, status.label]),
-) as Record<TravelRequestStatus, string>;
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
@@ -91,7 +77,7 @@ export function PipelinePage() {
   const totalRequests =
     pipeline === undefined
       ? 0
-      : statuses.reduce((total, status) => total + pipeline[status.value].length, 0);
+      : statuses.reduce((total, status) => total + pipeline[status].length, 0);
 
   function handleStatusChange(
     request: PipelineTravelRequest,
@@ -110,30 +96,24 @@ export function PipelinePage() {
           title="Pipeline"
           description="Ежедневная доска заявок: от первого уточнения до брони или отказа."
         />
-        <div className="rounded-lg border bg-card px-4 py-3 shadow-sm">
+        <Card className="px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
             Активных заявок
           </p>
           <p className="mt-1 text-2xl font-semibold">{totalRequests}</p>
-        </div>
+        </Card>
       </div>
 
       {mutationError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm">
-          {mutationError}
-        </div>
+        <ErrorState message={mutationError} />
       ) : null}
 
       {pipelineQuery.isLoading ? (
-        <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground shadow-sm">
-          Загружаем pipeline...
-        </div>
+        <LoadingState text="Загружаем pipeline..." />
       ) : null}
 
       {pipelineQuery.isError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700 shadow-sm">
-          {getErrorMessage(pipelineQuery.error)}
-        </div>
+        <ErrorState message={getErrorMessage(pipelineQuery.error)} />
       ) : null}
 
       {!pipelineQuery.isLoading && !pipelineQuery.isError && totalRequests === 0 ? (
@@ -147,9 +127,9 @@ export function PipelinePage() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
           {statuses.map((status) => (
             <PipelineColumn
-              key={status.value}
+              key={status}
               isUpdating={statusMutation.isPending}
-              requests={pipeline[status.value]}
+              requests={pipeline[status]}
               status={status}
               onStatusChange={handleStatusChange}
             />
@@ -168,23 +148,17 @@ function PipelineColumn({
 }: {
   isUpdating: boolean;
   requests: PipelineTravelRequest[];
-  status: { value: TravelRequestStatus; label: string; tone: string };
+  status: TravelRequestStatus;
   onStatusChange: (
     request: PipelineTravelRequest,
     status: TravelRequestStatus,
   ) => void;
 }) {
   return (
-    <section className="min-h-52 rounded-lg border bg-card p-3 shadow-sm">
+    <Card className="min-h-52 p-3">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2
-          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${status.tone}`}
-        >
-          {status.label}
-        </h2>
-        <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-          {requests.length}
-        </span>
+        <TravelRequestStatusBadge status={status} />
+        <Badge variant="secondary">{requests.length}</Badge>
       </div>
 
       {requests.length === 0 ? (
@@ -203,7 +177,7 @@ function PipelineColumn({
           ))}
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -220,7 +194,8 @@ function PipelineCard({
   ) => void;
 }) {
   return (
-    <article className="rounded-lg border bg-background p-3 transition hover:border-primary/40 hover:bg-muted/30">
+    <Card className="bg-background transition hover:border-primary/40 hover:bg-muted/30">
+      <CardContent className="p-3">
       <Link className="block" to={`/requests/${request.id}`}>
         <p className="text-xs font-medium text-muted-foreground">
           {request.clientFullName}
@@ -241,22 +216,27 @@ function PipelineCard({
 
       <label className="mt-3 block space-y-1.5">
         <span className="text-xs font-medium text-muted-foreground">Статус</span>
-        <select
-          className="w-full rounded-md border bg-card px-2.5 py-2 text-xs outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
+        <Select
           disabled={isUpdating}
           value={request.status}
-          onChange={(event) =>
-            onStatusChange(request, event.target.value as TravelRequestStatus)
+          onValueChange={(value) =>
+            onStatusChange(request, value as TravelRequestStatus)
           }
         >
-          {statuses.map((status) => (
-            <option key={status.value} value={status.value}>
-              {statusLabels[status.value]}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="h-9 bg-card text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {statuses.map((status) => (
+              <SelectItem key={status} value={status}>
+                {travelRequestStatusLabels[status]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </label>
-    </article>
+      </CardContent>
+    </Card>
   );
 }
 

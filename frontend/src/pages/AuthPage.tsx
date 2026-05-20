@@ -5,8 +5,13 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 import { useAuth } from "@/auth/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { FormField } from "@/pages/components/FormField";
 
 const loginSchema = z.object({
   email: z.string().email("Введите корректный email"),
@@ -85,7 +90,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
   return (
     <main className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center">
-        <section className="grid w-full overflow-hidden rounded-lg border bg-card shadow-sm lg:grid-cols-[1fr_420px]">
+        <Card className="grid w-full overflow-hidden lg:grid-cols-[1fr_420px]">
           <div className="border-b bg-muted/50 p-8 lg:border-b-0 lg:border-r lg:p-10">
             <p className="text-sm font-semibold text-primary">TripFlow</p>
             <h1 className="mt-4 max-w-2xl text-3xl font-semibold tracking-normal sm:text-4xl">
@@ -108,32 +113,22 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
           </div>
 
           <div className="p-6 sm:p-8">
-            <div className="mb-6 flex rounded-md border bg-muted p-1">
-              <button
-                className={cn(
-                  "flex-1 rounded px-3 py-2 text-sm font-medium transition",
-                  !isRegister
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground"
-                )}
-                type="button"
-                onClick={() => navigate("/login", { replace: true })}
-              >
-                Вход
-              </button>
-              <button
-                className={cn(
-                  "flex-1 rounded px-3 py-2 text-sm font-medium transition",
-                  isRegister
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground"
-                )}
-                type="button"
-                onClick={() => navigate("/register", { replace: true })}
-              >
-                Регистрация
-              </button>
-            </div>
+            <Tabs className="mb-6" value={mode}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger
+                  value="login"
+                  onClick={() => navigate("/login", { replace: true })}
+                >
+                  Вход
+                </TabsTrigger>
+                <TabsTrigger
+                  value="register"
+                  onClick={() => navigate("/register", { replace: true })}
+                >
+                  Регистрация
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
 
             <div className="mb-6">
               <h2 className="text-2xl font-semibold tracking-normal">
@@ -147,9 +142,9 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
             </div>
 
             {formError ? (
-              <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {formError}
-              </div>
+              <Alert className="mb-4" variant="destructive">
+                <AlertDescription>{formError}</AlertDescription>
+              </Alert>
             ) : null}
 
             {isRegister ? (
@@ -157,38 +152,35 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
                 className="space-y-4"
                 onSubmit={registerForm.handleSubmit(handleRegister)}
               >
-                <Field
+                <FormField
                   error={registerForm.formState.errors.name?.message}
                   label="Имя"
                 >
-                  <input
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-                    {...registerForm.register("name")}
+                  <Input
                     autoComplete="name"
+                    {...registerForm.register("name")}
                   />
-                </Field>
-                <Field
+                </FormField>
+                <FormField
                   error={registerForm.formState.errors.email?.message}
                   label="Email"
                 >
-                  <input
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-                    {...registerForm.register("email")}
+                  <Input
                     autoComplete="email"
                     type="email"
+                    {...registerForm.register("email")}
                   />
-                </Field>
-                <Field
+                </FormField>
+                <FormField
                   error={registerForm.formState.errors.password?.message}
                   label="Пароль"
                 >
-                  <input
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-                    {...registerForm.register("password")}
+                  <Input
                     autoComplete="new-password"
                     type="password"
+                    {...registerForm.register("password")}
                   />
-                </Field>
+                </FormField>
                 <SubmitButton isLoading={isSubmitting}>
                   Создать аккаунт
                 </SubmitButton>
@@ -198,53 +190,33 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
                 className="space-y-4"
                 onSubmit={loginForm.handleSubmit(handleLogin)}
               >
-                <Field
+                <FormField
                   error={loginForm.formState.errors.email?.message}
                   label="Email"
                 >
-                  <input
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-                    {...loginForm.register("email")}
+                  <Input
                     autoComplete="email"
                     type="email"
+                    {...loginForm.register("email")}
                   />
-                </Field>
-                <Field
+                </FormField>
+                <FormField
                   error={loginForm.formState.errors.password?.message}
                   label="Пароль"
                 >
-                  <input
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary"
-                    {...loginForm.register("password")}
+                  <Input
                     autoComplete="current-password"
                     type="password"
+                    {...loginForm.register("password")}
                   />
-                </Field>
+                </FormField>
                 <SubmitButton isLoading={isSubmitting}>Войти</SubmitButton>
               </form>
             )}
           </div>
-        </section>
+        </Card>
       </div>
     </main>
-  );
-}
-
-function Field({
-  children,
-  error,
-  label
-}: {
-  children: React.ReactNode;
-  error?: string;
-  label: string;
-}) {
-  return (
-    <label className="block space-y-2">
-      <span className="text-sm font-medium">{label}</span>
-      {children}
-      {error ? <span className="block text-sm text-red-700">{error}</span> : null}
-    </label>
   );
 }
 
@@ -256,12 +228,8 @@ function SubmitButton({
   isLoading: boolean;
 }) {
   return (
-    <button
-      className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-      disabled={isLoading}
-      type="submit"
-    >
+    <Button className="w-full" disabled={isLoading} type="submit">
       {isLoading ? "Проверяем..." : children}
-    </button>
+    </Button>
   );
 }
