@@ -15,8 +15,11 @@ import {
   type AuthResponse,
   type User
 } from "@/lib/api";
-
-const AUTH_TOKEN_KEY = "tripflow_access_token";
+import {
+  clearStoredToken,
+  readStoredToken,
+  saveStoredToken
+} from "@/auth/tokenStorage";
 
 type LoginInput = {
   email: string;
@@ -39,23 +42,19 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function readStoredToken(): string | null {
-  return window.localStorage.getItem(AUTH_TOKEN_KEY);
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => readStoredToken());
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const applyAuthResponse = useCallback((response: AuthResponse) => {
-    window.localStorage.setItem(AUTH_TOKEN_KEY, response.access_token);
+    saveStoredToken(response.access_token);
     setToken(response.access_token);
     setUser(response.user);
   }, []);
 
   const logout = useCallback(() => {
-    window.localStorage.removeItem(AUTH_TOKEN_KEY);
+    clearStoredToken();
     setToken(null);
     setUser(null);
   }, []);
