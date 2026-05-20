@@ -111,10 +111,15 @@ DELETE /notes/{note_id}
 
 ```http
 POST /ai/generate-proposal
+```
+
+AI endpoints return editable draft content and may create `GenerationTask` records.
+
+Planned after MVP polish, but not implemented yet:
+
+```http
 POST /ai/client-summary
 POST /ai/message-template
 POST /ai/next-questions
 POST /ai/rewrite-message
 ```
-
-AI endpoints return editable draft content and may create `GenerationTask` records.

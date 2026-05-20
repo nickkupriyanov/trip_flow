@@ -233,6 +233,7 @@ export function DashboardPage() {
             <div className="space-y-3">
               {reminders.map((reminder) => (
                 <ReminderRow
+                  clients={clientsQuery.data ?? []}
                   isMarkingDone={doneMutation.isPending}
                   key={reminder.id}
                   reminder={reminder}
@@ -337,14 +338,18 @@ function DashboardPanel({
 }
 
 function ReminderRow({
+  clients,
   isMarkingDone,
   reminder,
   onMarkDone
 }: {
+  clients: Client[];
   isMarkingDone: boolean;
   reminder: Reminder;
   onMarkDone: (reminder: Reminder) => void;
 }) {
+  const client = clients.find((item) => item.id === reminder.clientId);
+
   return (
     <article className="rounded-lg border bg-background p-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -358,7 +363,7 @@ function ReminderRow({
                 className="text-sm font-medium text-muted-foreground hover:text-primary"
                 to={`/clients/${reminder.clientId}`}
               >
-                Клиент
+                {client?.fullName ?? "Клиент"}
               </Link>
             ) : (
               <span className="text-sm text-muted-foreground">Без клиента</span>

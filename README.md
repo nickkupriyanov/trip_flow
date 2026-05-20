@@ -91,6 +91,27 @@ Backend-контейнер автоматически применит мигр�
 - backend health: http://localhost:8000/health
 - PostgreSQL: `localhost:5432`
 
+## Demo data
+
+После первого запуска можно заполнить базу демонстрационным MVP-сценарием:
+
+```bash
+docker compose exec backend python -m app.demo_seed
+```
+
+Тестовый пользователь:
+
+- email: `agent@example.com`
+- password: `strong-password`
+
+Demo-сценарий включает клиента, предпочтения, заявку на семейную Турцию, три
+варианта тура, готовое предложение, заметку коммуникации и напоминание на
+сегодня. Этого достаточно, чтобы пройти основной маршрут:
+
+```text
+Клиент -> Заявка -> Варианты тура -> Предложение -> Копирование -> Pipeline -> Напоминание -> Dashboard
+```
+
 Если нужно применить миграции вручную:
 
 ```bash
@@ -153,6 +174,24 @@ Backend import check:
 cd backend
 python -c "from app.main import app; print(app.title)"
 ```
+
+Backend tests:
+
+```bash
+cd backend
+pytest
+```
+
+Manual MVP smoke-check:
+
+1. Войти под demo-пользователем.
+2. Открыть клиента Анну Петрову.
+3. Открыть заявку по Белеку.
+4. Проверить варианты тура и recommended option.
+5. Создать или отредактировать proposal и скопировать текст.
+6. Сменить статус заявки в pipeline.
+7. Создать напоминание.
+8. Проверить, что сегодняшнее напоминание видно на dashboard.
 
 ## Документация
 

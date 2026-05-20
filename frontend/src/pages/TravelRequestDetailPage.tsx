@@ -621,6 +621,7 @@ function ProposalsPanel({
   const [generationFormat, setGenerationFormat] =
     useState<ProposalFormat>("telegram");
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
+  const [copiedProposalId, setCopiedProposalId] = useState<string | null>(null);
 
   const proposalsQuery = useQuery({
     queryKey: ["proposals", requestId],
@@ -715,7 +716,10 @@ function ProposalsPanel({
     try {
       await navigator.clipboard.writeText(proposal.content);
       setCopyMessage(`Текст "${proposal.title}" скопирован.`);
+      setCopiedProposalId(proposal.id);
+      window.setTimeout(() => setCopiedProposalId(null), 2500);
     } catch {
+      setCopiedProposalId(null);
       setCopyMessage("Не удалось скопировать текст. Выделите его в превью вручную.");
     }
   }
@@ -889,7 +893,10 @@ function ProposalsPanel({
       ) : null}
 
       {copyMessage ? (
-        <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div
+          aria-live="polite"
+          className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+        >
           {copyMessage}
         </div>
       ) : null}
@@ -931,6 +938,7 @@ function ProposalsPanel({
             ) : (
               <ProposalCard
                 isDeleting={deleteMutation.isPending}
+                isCopied={copiedProposalId === proposal.id}
                 key={proposal.id}
                 proposal={proposal}
                 onCopy={handleCopy}
@@ -1073,12 +1081,14 @@ function ProposalForm({
 }
 
 function ProposalCard({
+  isCopied,
   isDeleting,
   proposal,
   onCopy,
   onDelete,
   onEdit
 }: {
+  isCopied: boolean;
   isDeleting: boolean;
   proposal: Proposal;
   onCopy: (proposal: Proposal) => void;
@@ -1101,11 +1111,15 @@ function ProposalCard({
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
-            className="rounded-md border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
+              isCopied
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
             type="button"
             onClick={() => onCopy(proposal)}
           >
-            Скопировать
+            {isCopied ? "Скопировано" : "Скопировать"}
           </button>
           <button
             className="rounded-md border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
