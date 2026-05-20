@@ -29,6 +29,7 @@ import {
   type TravelRequestInput,
   type TravelRequestStatus
 } from "@/lib/api";
+import { CommunicationNotesPanel } from "@/pages/components/CommunicationNotesPanel";
 import { EmptyState } from "@/pages/components/EmptyState";
 import { TourOptionForm } from "@/pages/components/TourOptionForm";
 import { TravelRequestForm } from "@/pages/components/TravelRequestForm";
@@ -206,6 +207,10 @@ export function TravelRequestDetailPage() {
       )}
 
       <TourOptionsPanel requestId={request.id} token={token!} />
+      <CommunicationNotesPanel
+        scope={{ kind: "request", clientId: request.clientId, requestId: request.id }}
+        token={token!}
+      />
       <ProposalsPanel requestId={request.id} token={token!} />
     </section>
   );
