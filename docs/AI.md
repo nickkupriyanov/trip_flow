@@ -5,6 +5,7 @@ AI helps the travel agent write and summarize. It does not replace the CRM workf
 ## MVP Capabilities
 
 - Generate editable proposal text.
+- Generate editable next-question drafts for incomplete travel requests.
 
 ## Planned AI Capabilities
 
@@ -13,7 +14,6 @@ the current polish stage:
 
 - Generate short Telegram / WhatsApp messages.
 - Generate client summary.
-- Suggest next questions for incomplete travel requests.
 - Rewrite an agent message in a clearer tone.
 
 ## Safety Rules

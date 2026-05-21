@@ -9,6 +9,12 @@ from app.schemas.proposal import ProposalFormat
 ProposalTone = Literal["friendly", "concise", "premium"]
 
 
+class RequestGenerationBase(CamelModel):
+    request_id: str
+    tone: ProposalTone = "friendly"
+    format: ProposalFormat = "telegram"
+
+
 class GenerateProposalRequest(CamelModel):
     request_id: str
     selected_option_ids: list[str] = Field(default_factory=list)
@@ -29,4 +35,26 @@ class ProposalGenerationOutput(CamelModel):
 
 
 class GenerateProposalResponse(ProposalGenerationOutput):
+    generation_task_id: str
+
+
+class GenerateNextQuestionsRequest(RequestGenerationBase):
+    pass
+
+
+class NextQuestionsGenerationOutput(CamelModel):
+    questions: list[str] = Field(min_length=1, max_length=8)
+    message: str = Field(min_length=1)
+    short_summary: str = Field(min_length=1, max_length=500)
+
+    @field_validator("questions")
+    @classmethod
+    def normalize_questions(cls, value: list[str]) -> list[str]:
+        questions = [item.strip() for item in value if item.strip()]
+        if not questions:
+            raise ValueError("At least one question is required")
+        return questions
+
+
+class GenerateNextQuestionsResponse(NextQuestionsGenerationOutput):
     generation_task_id: str

@@ -18,6 +18,7 @@ import { CommunicationNotesPanel } from "@/pages/components/CommunicationNotesPa
 import { ErrorState, LoadingState } from "@/pages/components/Feedback";
 import { TravelRequestStatusBadge } from "@/pages/components/StatusBadge";
 import { TravelRequestForm } from "@/pages/components/TravelRequestForm";
+import { NextQuestionsPanel } from "@/pages/travel-request-detail/NextQuestionsPanel";
 import { ProposalsPanel } from "@/pages/travel-request-detail/ProposalsPanel";
 import { TourOptionsPanel } from "@/pages/travel-request-detail/TourOptionsPanel";
 import { TravelRequestSummary } from "@/pages/travel-request-detail/TravelRequestSummary";
@@ -175,6 +176,7 @@ export function TravelRequestDetailPage() {
         <TravelRequestSummary request={request} />
       )}
 
+      <NextQuestionsPanel requestId={request.id} token={token!} />
       <TourOptionsPanel requestId={request.id} token={token!} />
       <CommunicationNotesPanel
         scope={{ kind: "request", clientId: request.clientId, requestId: request.id }}

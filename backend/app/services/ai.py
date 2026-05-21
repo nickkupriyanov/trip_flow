@@ -11,7 +11,9 @@ from app.models.client import ClientPreference
 from app.models.tour_option import TourOption
 from app.models.travel_request import TravelRequest
 from app.schemas.ai import (
+    GenerateNextQuestionsRequest,
     GenerateProposalRequest,
+    NextQuestionsGenerationOutput,
     ProposalGenerationOutput,
 )
 
@@ -37,11 +39,39 @@ def load_generation_context(
     user_id: str,
     payload: GenerateProposalRequest,
 ) -> tuple[TravelRequest | None, list[TourOption], ClientPreference | None]:
+    return load_request_generation_context(
+        db,
+        user_id=user_id,
+        request_id=payload.request_id,
+        selected_option_ids=payload.selected_option_ids,
+    )
+
+
+def load_next_questions_context(
+    db: Session,
+    *,
+    user_id: str,
+    payload: GenerateNextQuestionsRequest,
+) -> tuple[TravelRequest | None, list[TourOption], ClientPreference | None]:
+    return load_request_generation_context(
+        db,
+        user_id=user_id,
+        request_id=payload.request_id,
+    )
+
+
+def load_request_generation_context(
+    db: Session,
+    *,
+    user_id: str,
+    request_id: str,
+    selected_option_ids: list[str] | None = None,
+) -> tuple[TravelRequest | None, list[TourOption], ClientPreference | None]:
     statement = (
         select(TravelRequest)
         .options(selectinload(TravelRequest.client))
         .where(
-            TravelRequest.id == payload.request_id,
+            TravelRequest.id == request_id,
             TravelRequest.user_id == user_id,
         )
     )
@@ -54,9 +84,9 @@ def load_generation_context(
         .where(TourOption.request_id == request.id)
         .order_by(TourOption.created_at.asc())
     )
-    if payload.selected_option_ids:
+    if selected_option_ids:
         options_statement = options_statement.where(
-            TourOption.id.in_(payload.selected_option_ids)
+            TourOption.id.in_(selected_option_ids)
         )
     options = list(db.scalars(options_statement))
 
@@ -144,6 +174,46 @@ def generate_proposal_draft(
     settings: Settings,
     generation_input: dict[str, object],
 ) -> ProposalGenerationOutput:
+    parsed = request_ai_json(
+        settings=settings,
+        generation_input=generation_input,
+        system_prompt=(
+            "You help an individual travel agent write editable proposal drafts. "
+            "Use only the supplied CRM data. Never invent real-time prices, hotel "
+            "availability, booking status, or factual hotel details. If something "
+            "is missing, say it needs clarification. Return only JSON with keys "
+            "title, message, recommendedOptionId, shortSummary."
+        ),
+    )
+    return ProposalGenerationOutput.model_validate(parsed)
+
+
+def generate_next_questions_draft(
+    *,
+    settings: Settings,
+    generation_input: dict[str, object],
+) -> NextQuestionsGenerationOutput:
+    parsed = request_ai_json(
+        settings=settings,
+        generation_input=generation_input,
+        system_prompt=(
+            "You help an individual travel agent decide what to clarify before "
+            "tour search or proposal writing. Use only the supplied CRM data. "
+            "Do not invent prices, availability, booking status, or hotel facts. "
+            "Ask concise client-facing questions only for missing or ambiguous "
+            "trip details that matter for the next workflow step. Return only "
+            "JSON with keys questions, message, shortSummary."
+        ),
+    )
+    return NextQuestionsGenerationOutput.model_validate(parsed)
+
+
+def request_ai_json(
+    *,
+    settings: Settings,
+    generation_input: dict[str, object],
+    system_prompt: str,
+) -> dict[str, Any]:
     if not settings.timeweb_ai_agent_url or not settings.timeweb_ai_api_token:
         raise AIConfigurationError(
             "AI provider is not configured. Set TIMEWEB_AI_AGENT_URL and "
@@ -156,13 +226,7 @@ def generate_proposal_draft(
         "messages": [
             {
                 "role": "system",
-                "content": (
-                    "You help an individual travel agent write editable proposal drafts. "
-                    "Use only the supplied CRM data. Never invent real-time prices, hotel "
-                    "availability, booking status, or factual hotel details. If something "
-                    "is missing, say it needs clarification. Return only JSON with keys "
-                    "title, message, recommendedOptionId, shortSummary."
-                ),
+                "content": system_prompt,
             },
             {
                 "role": "user",
@@ -188,7 +252,9 @@ def generate_proposal_draft(
 
     try:
         content = raw_response["choices"][0]["message"]["content"]
-        parsed: dict[str, Any] = json.loads(content)
-        return ProposalGenerationOutput.model_validate(parsed)
+        parsed = json.loads(content)
+        if not isinstance(parsed, dict):
+            raise TypeError("AI provider content must be a JSON object")
+        return parsed
     except (KeyError, IndexError, TypeError, ValueError) as exc:
         raise AIProviderError("AI provider returned an invalid response") from exc

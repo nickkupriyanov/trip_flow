@@ -124,6 +124,15 @@ def test_generate_proposal_requires_authentication(client: TestClient) -> None:
     assert response.status_code in {401, 403}
 
 
+def test_next_questions_requires_authentication(client: TestClient) -> None:
+    response = client.post(
+        "/ai/next-questions",
+        json={"requestId": "missing"},
+    )
+
+    assert response.status_code in {401, 403}
+
+
 def test_generate_proposal_returns_service_unavailable_without_api_key(
     client: TestClient,
 ) -> None:
@@ -152,6 +161,44 @@ def test_generate_proposal_returns_service_unavailable_without_api_key(
     assert "AI provider is not configured" in response.json()["detail"]
     assert "TIMEWEB_AI_AGENT_URL" in response.json()["detail"]
     assert "TIMEWEB_AI_API_TOKEN" in response.json()["detail"]
+
+
+def test_next_questions_returns_service_unavailable_without_api_key_and_records_task(
+    client: TestClient,
+) -> None:
+    client.app.dependency_overrides[get_settings] = lambda: SimpleNamespace(
+        timeweb_ai_agent_url=None,
+        timeweb_ai_api_token=None,
+        ai_model="test-model",
+    )
+    headers = auth_headers(client)
+    created_client = create_client(client, headers)
+    request = create_request(client, headers, str(created_client["id"]))
+
+    response = client.post(
+        "/ai/next-questions",
+        headers=headers,
+        json={
+            "requestId": request["id"],
+            "tone": "friendly",
+            "format": "telegram",
+        },
+    )
+
+    assert response.status_code == 503
+    assert "AI provider is not configured" in response.json()["detail"]
+
+    with client.app.state.testing_session_local() as db:
+        task = db.scalar(
+            select(GenerationTask).where(
+                GenerationTask.request_id == request["id"],
+                GenerationTask.type == "next_questions",
+            )
+        )
+        assert task is not None
+        assert task.status == "failed"
+        assert "TIMEWEB_AI_AGENT_URL" in str(task.error)
+        assert "TIMEWEB_AI_API_TOKEN" in str(task.error)
 
 
 def test_generate_proposal_returns_editable_draft_and_records_generation_task(
@@ -223,6 +270,82 @@ def test_generate_proposal_returns_editable_draft_and_records_generation_task(
         }
 
 
+def test_next_questions_returns_copyable_draft_and_records_generation_task(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    headers = auth_headers(client)
+    created_client = create_client(client, headers)
+    request = create_request(client, headers, str(created_client["id"]))
+    create_option(client, headers, str(request["id"]))
+
+    def fake_generate_next_questions_draft(**kwargs: object) -> object:
+        from app.schemas.ai import NextQuestionsGenerationOutput
+
+        return NextQuestionsGenerationOutput(
+            questions=[
+                "Уточните, пожалуйста, желаемый бюджет на всех туристов.",
+                "Насколько важна первая береговая линия?",
+            ],
+            message=(
+                "Анна, чтобы подобрать варианты точнее, подскажите бюджет "
+                "и насколько важна первая линия?"
+            ),
+            shortSummary="Need budget and beach priority before final search.",
+        )
+
+    monkeypatch.setattr(
+        "app.api.ai.generate_next_questions_draft",
+        fake_generate_next_questions_draft,
+    )
+
+    response = client.post(
+        "/ai/next-questions",
+        headers=headers,
+        json={
+            "requestId": request["id"],
+            "tone": "friendly",
+            "format": "telegram",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["questions"] == [
+        "Уточните, пожалуйста, желаемый бюджет на всех туристов.",
+        "Насколько важна первая береговая линия?",
+    ]
+    assert body["message"] == (
+        "Анна, чтобы подобрать варианты точнее, подскажите бюджет "
+        "и насколько важна первая линия?"
+    )
+    assert body["shortSummary"] == "Need budget and beach priority before final search."
+    assert body["generationTaskId"]
+
+    with client.app.state.testing_session_local() as db:
+        task = db.scalar(
+            select(GenerationTask).where(
+                GenerationTask.id == body["generationTaskId"]
+            )
+        )
+        assert task is not None
+        assert task.status == "done"
+        assert task.type == "next_questions"
+        assert task.request_id == request["id"]
+        assert task.client_id == created_client["id"]
+        assert task.output == {
+            "questions": [
+                "Уточните, пожалуйста, желаемый бюджет на всех туристов.",
+                "Насколько важна первая береговая линия?",
+            ],
+            "message": (
+                "Анна, чтобы подобрать варианты точнее, подскажите бюджет "
+                "и насколько важна первая линия?"
+            ),
+            "shortSummary": "Need budget and beach priority before final search.",
+        }
+
+
 def test_generate_proposal_scopes_request_to_current_user(client: TestClient) -> None:
     first_headers = auth_headers(client, "first@example.com")
     second_headers = auth_headers(client, "second@example.com")
@@ -233,6 +356,21 @@ def test_generate_proposal_scopes_request_to_current_user(client: TestClient) ->
         "/ai/generate-proposal",
         headers=second_headers,
         json={"requestId": first_request["id"], "selectedOptionIds": []},
+    )
+
+    assert response.status_code == 404
+
+
+def test_next_questions_scopes_request_to_current_user(client: TestClient) -> None:
+    first_headers = auth_headers(client, "first@example.com")
+    second_headers = auth_headers(client, "second@example.com")
+    first_client = create_client(client, first_headers, full_name="First Client")
+    first_request = create_request(client, first_headers, str(first_client["id"]))
+
+    response = client.post(
+        "/ai/next-questions",
+        headers=second_headers,
+        json={"requestId": first_request["id"]},
     )
 
     assert response.status_code == 404
@@ -274,6 +412,49 @@ def test_generate_proposal_provider_failure_records_sanitized_error(
     with client.app.state.testing_session_local() as db:
         task = db.scalar(
             select(GenerationTask).where(GenerationTask.request_id == request["id"])
+        )
+        assert task is not None
+        assert task.status == "failed"
+        assert task.error == "AI provider request failed"
+
+
+def test_next_questions_provider_failure_records_sanitized_error(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    headers = auth_headers(client)
+    created_client = create_client(client, headers)
+    request = create_request(client, headers, str(created_client["id"]))
+
+    def fake_generate_next_questions_draft(**kwargs: object) -> object:
+        raise AIProviderError("provider rejected token sk-test-secret-value")
+
+    monkeypatch.setattr(
+        "app.api.ai.generate_next_questions_draft",
+        fake_generate_next_questions_draft,
+    )
+
+    response = client.post(
+        "/ai/next-questions",
+        headers=headers,
+        json={
+            "requestId": request["id"],
+            "tone": "friendly",
+            "format": "telegram",
+        },
+    )
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == (
+        "AI provider failed to generate next questions"
+    )
+
+    with client.app.state.testing_session_local() as db:
+        task = db.scalar(
+            select(GenerationTask).where(
+                GenerationTask.request_id == request["id"],
+                GenerationTask.type == "next_questions",
+            )
         )
         assert task is not None
         assert task.status == "failed"
