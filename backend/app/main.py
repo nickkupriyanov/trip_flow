@@ -5,6 +5,7 @@ from app.api.ai import router as ai_router
 from app.api.auth import router as auth_router
 from app.api.clients import router as clients_router
 from app.api.communication_notes import router as communication_notes_router
+from app.api.dashboard import router as dashboard_router
 from app.api.health import router as health_router
 from app.api.proposals import router as proposals_router
 from app.api.reminders import router as reminders_router
@@ -34,6 +35,7 @@ def create_app() -> FastAPI:
     app.include_router(proposals_router)
     app.include_router(reminders_router)
     app.include_router(communication_notes_router)
+    app.include_router(dashboard_router)
     app.include_router(health_router)
 
     return app
