@@ -1,4 +1,17 @@
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent
+} from "@dnd-kit/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { GripVertical } from "lucide-react";
+import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 
@@ -15,12 +28,14 @@ import {
 import {
   fetchPipeline,
   updateTravelRequestStatus,
+  type Pipeline,
   type PipelineTravelRequest,
   type TravelRequestStatus
 } from "@/lib/api";
 import { travelRequestStatuses } from "@/lib/domain";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatRequestMeta } from "@/lib/formatters";
+import { moveRequestInPipeline } from "@/lib/pipeline";
 import { queryKeys } from "@/lib/queryKeys";
 import { EmptyState } from "@/pages/components/EmptyState";
 import { ErrorState, LoadingState } from "@/pages/components/Feedback";
@@ -49,6 +64,18 @@ export function PipelinePage() {
       requestId: string;
       status: TravelRequestStatus;
     }) => updateTravelRequestStatus(token!, requestId, { status }),
+    onMutate: async ({ requestId, status }) => {
+      setMutationError(null);
+      await queryClient.cancelQueries({ queryKey: queryKeys.pipeline() });
+      const previousPipeline = queryClient.getQueryData<Pipeline>(
+        queryKeys.pipeline(),
+      );
+      queryClient.setQueryData<Pipeline | undefined>(
+        queryKeys.pipeline(),
+        (current) => moveRequestInPipeline(current, requestId, status),
+      );
+      return { previousPipeline };
+    },
     onSuccess: async (request) => {
       setMutationError(null);
       await queryClient.invalidateQueries({ queryKey: queryKeys.pipeline() });
@@ -60,8 +87,17 @@ export function PipelinePage() {
         queryKey: queryKeys.clientRequests(request.clientId)
       });
     },
-    onError: (error) => setMutationError(getApiErrorMessage(error))
+    onError: (error, _variables, context) => {
+      if (context?.previousPipeline) {
+        queryClient.setQueryData(queryKeys.pipeline(), context.previousPipeline);
+      }
+      setMutationError(getApiErrorMessage(error));
+    }
   });
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor),
+  );
 
   const pipeline = pipelineQuery.data;
   const totalRequests =
@@ -80,6 +116,20 @@ export function PipelinePage() {
       return;
     }
     statusMutation.mutate({ requestId: request.id, status });
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const request = event.active.data.current?.request as
+      | PipelineTravelRequest
+      | undefined;
+    const status = event.over?.data.current?.status as
+      | TravelRequestStatus
+      | undefined;
+
+    if (!request || !status || status === request.status) {
+      return;
+    }
+    handleStatusChange(request, status);
   }
 
   return (
@@ -117,17 +167,23 @@ export function PipelinePage() {
       ) : null}
 
       {pipeline ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
-          {travelRequestStatuses.map((status) => (
-            <PipelineColumn
-              key={status}
-              isUpdating={statusMutation.isPending}
-              requests={pipeline[status]}
-              status={status}
-              onStatusChange={handleStatusChange}
-            />
-          ))}
-        </div>
+        <DndContext
+          collisionDetection={closestCenter}
+          sensors={sensors}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
+            {travelRequestStatuses.map((status) => (
+              <PipelineColumn
+                key={status}
+                isUpdating={statusMutation.isPending}
+                requests={pipeline[status]}
+                status={status}
+                onStatusChange={handleStatusChange}
+              />
+            ))}
+          </div>
+        </DndContext>
       ) : null}
     </section>
   );
@@ -147,8 +203,18 @@ function PipelineColumn({
     status: TravelRequestStatus,
   ) => void;
 }) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: `pipeline-status-${status}`,
+    data: { type: "travel-request-status", status }
+  });
+
   return (
-    <Card className="min-h-52 p-3">
+    <Card
+      ref={setNodeRef}
+      className={`min-h-52 p-3 transition ${
+        isOver ? "border-primary bg-primary/5" : ""
+      }`}
+    >
       <div className="mb-3 flex items-center justify-between gap-3">
         <TravelRequestStatusBadge status={status} />
         <Badge variant="secondary">{requests.length}</Badge>
@@ -186,20 +252,55 @@ function PipelineCard({
     status: TravelRequestStatus,
   ) => void;
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging
+  } = useDraggable({
+    id: request.id,
+    data: { type: "travel-request", request },
+    disabled: isUpdating
+  });
+  const style: CSSProperties = {
+    transform: transform
+      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+      : undefined
+  };
+
   return (
-    <Card className="bg-background transition hover:border-primary/40 hover:bg-muted/30">
+    <Card
+      ref={setNodeRef}
+      className={`bg-background transition-colors hover:border-primary/40 hover:bg-muted/30 ${
+        isDragging ? "relative z-20 opacity-80 shadow-md" : ""
+      }`}
+      style={style}
+    >
       <CardContent className="p-3">
-      <Link className="block" to={`/requests/${request.id}`}>
-        <p className="text-xs font-medium text-muted-foreground">
-          {request.clientFullName}
-        </p>
-        <h3 className="mt-1 text-sm font-semibold leading-5 text-foreground">
-          {request.destination || "Заявка без направления"}
-        </h3>
-        <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            {formatRequestMeta(request)}
-        </p>
-      </Link>
+      <div className="flex items-start gap-2">
+        <button
+          {...attributes}
+          {...listeners}
+          aria-label="Перетащить заявку"
+          className="mt-0.5 inline-flex h-7 w-7 shrink-0 cursor-grab items-center justify-center rounded-md border bg-card text-muted-foreground transition hover:border-primary/40 hover:text-foreground active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={isUpdating}
+          type="button"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <Link className="min-w-0 flex-1" to={`/requests/${request.id}`}>
+          <p className="text-xs font-medium text-muted-foreground">
+            {request.clientFullName}
+          </p>
+          <h3 className="mt-1 text-sm font-semibold leading-5 text-foreground">
+            {request.destination || "Заявка без направления"}
+          </h3>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              {formatRequestMeta(request)}
+          </p>
+        </Link>
+      </div>
 
       {request.wishes ? (
         <p className="mt-3 line-clamp-2 text-xs leading-5 text-muted-foreground">

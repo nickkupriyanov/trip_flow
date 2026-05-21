@@ -111,6 +111,20 @@ export type PipelineTravelRequest = TravelRequest & {
 
 export type Pipeline = Record<TravelRequestStatus, PipelineTravelRequest[]>;
 
+export type DashboardWidgetId =
+  | "overview"
+  | "todayReminders"
+  | "recentClients"
+  | "miniPipeline";
+
+export type DashboardPreferences = {
+  dashboardWidgetOrder: DashboardWidgetId[];
+};
+
+export type DashboardPreferencesInput = {
+  dashboardWidgetOrder: DashboardWidgetId[];
+};
+
 export type TravelRequestInput = {
   status?: TravelRequestStatus;
   destination?: string | null;
@@ -489,6 +503,26 @@ export function updateTravelRequestStatus(
 
 export function fetchPipeline(token: string): Promise<Pipeline> {
   return apiRequest<Pipeline>("/pipeline", {}, token);
+}
+
+export function fetchDashboardPreferences(
+  token: string,
+): Promise<DashboardPreferences> {
+  return apiRequest<DashboardPreferences>("/dashboard/preferences", {}, token);
+}
+
+export function updateDashboardPreferences(
+  token: string,
+  payload: DashboardPreferencesInput,
+): Promise<DashboardPreferences> {
+  return apiRequest<DashboardPreferences>(
+    "/dashboard/preferences",
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
 }
 
 export function deleteTravelRequest(

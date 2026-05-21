@@ -8,6 +8,7 @@ export const queryKeys = {
     ["client-requests", clientId] as const,
   communicationNotes: (scope: string, id: string) =>
     ["communication-notes", scope, id] as const,
+  dashboardPreferences: () => ["dashboard-preferences"] as const,
   pipeline: () => ["pipeline"] as const,
   proposals: (requestId: string) => ["proposals", requestId] as const,
   reminders: (filters?: object) =>
