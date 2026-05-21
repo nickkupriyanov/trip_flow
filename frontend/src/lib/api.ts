@@ -229,6 +229,19 @@ export type GenerateProposalOutput = {
   generationTaskId: string;
 };
 
+export type GenerateNextQuestionsInput = {
+  requestId: string;
+  tone?: ProposalTone;
+  format?: ProposalFormat;
+};
+
+export type GenerateNextQuestionsOutput = {
+  questions: string[];
+  message: string;
+  shortSummary: string;
+  generationTaskId: string;
+};
+
 export type ReminderStatus = "active" | "done";
 
 export type Reminder = {
@@ -620,6 +633,20 @@ export function generateProposalDraft(
 ): Promise<GenerateProposalOutput> {
   return apiRequest<GenerateProposalOutput>(
     "/ai/generate-proposal",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
+}
+
+export function generateNextQuestionsDraft(
+  token: string,
+  payload: GenerateNextQuestionsInput,
+): Promise<GenerateNextQuestionsOutput> {
+  return apiRequest<GenerateNextQuestionsOutput>(
+    "/ai/next-questions",
     {
       method: "POST",
       body: JSON.stringify(payload),
