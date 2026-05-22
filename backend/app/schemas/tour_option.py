@@ -59,6 +59,18 @@ class TourOptionCreate(TourOptionBase):
     pass
 
 
+class TourOptionImportRequest(CamelModel):
+    url: str = Field(min_length=1, max_length=500)
+
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Qui-Quo URL is required")
+        return stripped
+
+
 class TourOptionUpdate(CamelModel):
     title: str | None = Field(default=None, min_length=1, max_length=180)
     country: str | None = Field(default=None, max_length=120)
@@ -114,3 +126,8 @@ class TourOptionRead(TourOptionBase):
     request_id: str
     created_at: datetime
     updated_at: datetime
+
+
+class TourOptionImportResult(CamelModel):
+    created_count: int
+    options: list[TourOptionRead]

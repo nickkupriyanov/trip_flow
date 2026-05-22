@@ -8,9 +8,22 @@ from app.api.travel_requests import owned_request_or_404
 from app.core.database import get_db
 from app.models.tour_option import TourOption
 from app.models.user import User
-from app.schemas.tour_option import TourOptionCreate, TourOptionRead, TourOptionUpdate
+from app.schemas.tour_option import (
+    TourOptionCreate,
+    TourOptionImportRequest,
+    TourOptionImportResult,
+    TourOptionRead,
+    TourOptionUpdate,
+)
+from app.services.qui_quo_import import (
+    QuiQuoFetchError,
+    QuiQuoImportError,
+    fetch_qui_quo_html,
+    parse_qui_quo_tour_options,
+)
 from app.services.tour_options import (
     create_tour_option,
+    create_tour_options,
     delete_tour_option,
     get_tour_option,
     list_tour_options,
@@ -58,6 +71,36 @@ def post_request_option(
 ) -> TourOption:
     request = owned_request_or_404(db, current_user=current_user, request_id=request_id)
     return create_tour_option(db, request=request, payload=payload)
+
+
+@router.post(
+    "/requests/{request_id}/options/import",
+    response_model=TourOptionImportResult,
+    status_code=status.HTTP_201_CREATED,
+)
+def import_request_options(
+    request_id: str,
+    payload: TourOptionImportRequest,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> TourOptionImportResult:
+    request = owned_request_or_404(db, current_user=current_user, request_id=request_id)
+    try:
+        html = fetch_qui_quo_html(payload.url)
+        option_payloads = parse_qui_quo_tour_options(html, source_url=payload.url)
+    except QuiQuoFetchError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
+    except QuiQuoImportError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+    options = create_tour_options(db, request=request, payloads=option_payloads)
+    return TourOptionImportResult(created_count=len(options), options=options)
 
 
 @router.patch("/options/{option_id}", response_model=TourOptionRead)

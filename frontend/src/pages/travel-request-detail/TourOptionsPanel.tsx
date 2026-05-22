@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { FormEvent } from "react";
 import { useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -9,6 +10,7 @@ import {
   createTourOption,
   deleteTourOption,
   fetchTourOptions,
+  importTourOptions,
   updateTourOption,
   type TourOption,
   type TourOptionInput
@@ -36,6 +38,8 @@ export function TourOptionsPanel({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [importUrl, setImportUrl] = useState("");
+  const [importSuccessCount, setImportSuccessCount] = useState<number | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
 
   const optionsQuery = useQuery({
@@ -79,6 +83,20 @@ export function TourOptionsPanel({
     onError: (error) => setMutationError(getApiErrorMessage(error))
   });
 
+  const importMutation = useMutation({
+    mutationFn: (url: string) => importTourOptions(token, requestId, { url }),
+    onSuccess: async (result) => {
+      setMutationError(null);
+      setImportUrl("");
+      setImportSuccessCount(result.createdCount);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tourOptions(requestId) });
+    },
+    onError: (error) => {
+      setImportSuccessCount(null);
+      setMutationError(getApiErrorMessage(error));
+    }
+  });
+
   async function handleCreate(payload: TourOptionInput) {
     await createMutation.mutateAsync(payload);
   }
@@ -94,7 +112,17 @@ export function TourOptionsPanel({
     await deleteMutation.mutateAsync(option.id);
   }
 
+  async function handleImport(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const url = importUrl.trim();
+    if (!url) {
+      return;
+    }
+    await importMutation.mutateAsync(url);
+  }
+
   const options = optionsQuery.data ?? [];
+  const canImport = importUrl.trim().length > 0 && !importMutation.isPending;
 
   return (
     <Card>
@@ -117,6 +145,48 @@ export function TourOptionsPanel({
             {isCreateOpen ? "Скрыть форму" : "Добавить вариант"}
           </Button>
         </div>
+
+        <form
+          className="mb-5 rounded-lg border bg-background p-4"
+          onSubmit={handleImport}
+        >
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+            <div className="flex-1">
+              <label
+                className="text-sm font-medium text-foreground"
+                htmlFor="qui-quo-import-url"
+              >
+                Импорт из Qui-Quo
+              </label>
+              <input
+                className="mt-2 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background transition placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={importMutation.isPending}
+                id="qui-quo-import-url"
+                placeholder="https://qui-quo.ru/CZ22-SU39"
+                type="url"
+                value={importUrl}
+                onChange={(event) => {
+                  setImportSuccessCount(null);
+                  setMutationError(null);
+                  setImportUrl(event.target.value);
+                }}
+              />
+            </div>
+            <Button disabled={!canImport} type="submit">
+              {importMutation.isPending ? "Импортируем..." : "Импортировать"}
+            </Button>
+          </div>
+          {importMutation.isPending ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Загружаем подборку и создаём варианты тура...
+            </p>
+          ) : null}
+          {importSuccessCount !== null ? (
+            <p className="mt-3 text-sm font-medium text-emerald-700">
+              Импортировано вариантов: {importSuccessCount}
+            </p>
+          ) : null}
+        </form>
 
         {isCreateOpen ? (
           <div className="mb-5 rounded-lg border bg-background p-4">

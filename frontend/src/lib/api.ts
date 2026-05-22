@@ -194,6 +194,15 @@ export type TourOptionInput = {
   isRecommended?: boolean;
 };
 
+export type ImportTourOptionsInput = {
+  url: string;
+};
+
+export type ImportTourOptionsOutput = {
+  createdCount: number;
+  options: TourOption[];
+};
+
 export type ProposalFormat = "telegram" | "whatsapp" | "email";
 
 export type Proposal = {
@@ -584,6 +593,21 @@ export function updateTourOption(
 
 export function deleteTourOption(token: string, optionId: string): Promise<void> {
   return apiRequest<void>(`/options/${optionId}`, { method: "DELETE" }, token);
+}
+
+export function importTourOptions(
+  token: string,
+  requestId: string,
+  payload: ImportTourOptionsInput,
+): Promise<ImportTourOptionsOutput> {
+  return apiRequest<ImportTourOptionsOutput>(
+    `/requests/${requestId}/options/import`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    token,
+  );
 }
 
 export function fetchProposals(

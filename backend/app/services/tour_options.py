@@ -59,6 +59,23 @@ def create_tour_option(
     return option
 
 
+def create_tour_options(
+    db: Session,
+    *,
+    request: TravelRequest,
+    payloads: list[TourOptionCreate],
+) -> list[TourOption]:
+    options = [
+        TourOption(request_id=request.id, **payload.model_dump())
+        for payload in payloads
+    ]
+    db.add_all(options)
+    db.commit()
+    for option in options:
+        db.refresh(option)
+    return options
+
+
 def update_tour_option(
     db: Session,
     *,
