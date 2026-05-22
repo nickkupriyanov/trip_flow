@@ -26,6 +26,7 @@ import { useAuth } from "@/auth/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   fetchClients,
   fetchDashboardPreferences,
@@ -482,7 +483,11 @@ function OverviewCard({
     <Card>
       <CardContent className="p-5">
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
-      <p className="mt-3 text-3xl font-semibold">{isLoading ? "..." : value}</p>
+      {isLoading ? (
+        <Skeleton className="mt-4 h-8 w-16" />
+      ) : (
+        <p className="mt-3 text-3xl font-semibold">{value}</p>
+      )}
       <p className="mt-2 text-sm text-muted-foreground">{note}</p>
       </CardContent>
     </Card>
@@ -527,14 +532,14 @@ function MiniPipelineWidget({
 
   return (
     <DashboardPanel
-      action={<Link className="text-sm font-medium text-primary" to="/pipeline">Открыть Pipeline</Link>}
-      description="Компактная доска активных заявок: перетащите карточку в другой статус, чтобы обновить workflow."
-      title="Мини-pipeline"
+      action={<Link className="text-sm font-medium text-primary" to="/pipeline">Открыть доску</Link>}
+      description="Компактная доска активных заявок: перетащите карточку в другой статус, чтобы обновить работу."
+      title="Активные заявки"
     >
       {isLoading ? (
-        <LoadingLine text="Загружаем pipeline..." />
+        <LoadingLine text="Загружаем доску заявок..." />
       ) : isError ? (
-        <LoadingLine text="Не удалось загрузить pipeline." />
+        <LoadingLine text="Не удалось загрузить доску заявок." />
       ) : activeRequests.length === 0 ? (
         <PanelEmpty
           title="Активных заявок пока нет"
@@ -779,9 +784,10 @@ function ClientRow({ client }: { client: Client }) {
 
 function LoadingLine({ text }: { text: string }) {
   return (
-    <Card className="bg-background p-4 text-sm text-muted-foreground">
-      {text}
-    </Card>
+    <div className="rounded-md border bg-background p-4">
+      <Skeleton className="h-4 w-44" />
+      <p className="mt-3 text-sm text-muted-foreground">{text}</p>
+    </div>
   );
 }
 

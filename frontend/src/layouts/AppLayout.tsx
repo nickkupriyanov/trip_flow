@@ -12,7 +12,7 @@ type NavigationItem = {
 
 const navigationItems: NavigationItem[] = [
   { label: "Дашборд", to: "/dashboard" },
-  { label: "Pipeline", to: "/pipeline" },
+  { label: "Заявки", to: "/pipeline" },
   { label: "Напоминания", to: "/reminders" },
   { label: "Клиенты", to: "/clients" }
 ];
@@ -75,10 +75,10 @@ export function AppLayout() {
 
       <div className="lg:pl-64">
         <header className="sticky top-0 z-10 border-b bg-background/95 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">
-                TripFlow MVP
+                TripFlow
               </p>
               <h1 className="text-2xl font-semibold tracking-normal">
                 Рабочее место для заявок на путешествия

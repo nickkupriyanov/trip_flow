@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -194,7 +195,7 @@ export function ProposalsPanel({
                 setIsGenerateOpen((value) => !value);
               }}
             >
-              {isGenerateOpen ? "Скрыть AI" : "Сгенерировать черновик"}
+              {isGenerateOpen ? "Скрыть генерацию" : "Сгенерировать черновик"}
             </Button>
             <Button
               type="button"
@@ -256,9 +257,7 @@ export function ProposalsPanel({
               <div className="grid gap-2 text-sm font-medium">
                 Варианты тура
                 {optionsQuery.isLoading ? (
-                  <p className="rounded-md border bg-card px-3 py-2 text-sm text-muted-foreground">
-                    Загружаем варианты...
-                  </p>
+                  <PanelLoading text="Загружаем варианты тура..." />
                 ) : null}
                 {optionsQuery.isError ? (
                   <Alert variant="destructive">
@@ -305,7 +304,7 @@ export function ProposalsPanel({
                 type="button"
                 onClick={() => generateMutation.mutate()}
               >
-                {generateMutation.isPending ? "Генерируем..." : "Создать AI-черновик"}
+                {generateMutation.isPending ? "Генерируем..." : "Создать черновик"}
               </Button>
             </div>
           </div>
@@ -347,7 +346,7 @@ export function ProposalsPanel({
         ) : null}
 
         {proposalsQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground">Загружаем предложения...</p>
+          <PanelLoading text="Загружаем предложения..." />
         ) : null}
 
         {proposalsQuery.isError ? (
@@ -401,5 +400,14 @@ export function ProposalsPanel({
         ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+function PanelLoading({ text }: { text: string }) {
+  return (
+    <div className="rounded-md border bg-background p-4">
+      <Skeleton className="h-4 w-44" />
+      <p className="mt-3 text-sm text-muted-foreground">{text}</p>
+    </div>
   );
 }

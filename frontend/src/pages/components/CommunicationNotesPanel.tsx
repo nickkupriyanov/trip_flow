@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -15,7 +16,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  ApiError,
   createCommunicationNote,
   deleteCommunicationNote,
   fetchClientCommunicationNotes,
@@ -25,6 +25,7 @@ import {
   type CommunicationNoteInput,
   type CommunicationNoteType
 } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/errors";
 import { EmptyState } from "@/pages/components/EmptyState";
 import { FormField } from "@/pages/components/FormField";
 
@@ -67,13 +68,6 @@ type NotesScope =
       clientId: string;
       requestId: string;
     };
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  return "Не удалось выполнить действие. Попробуйте ещё раз.";
-}
 
 function formatDateTime(value: string): string {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -147,7 +141,7 @@ export function CommunicationNotesPanel({
       setIsCreateOpen(false);
       await invalidateNotes();
     },
-    onError: (error) => setFormError(getErrorMessage(error))
+    onError: (error) => setFormError(getApiErrorMessage(error))
   });
 
   const updateMutation = useMutation({
@@ -167,7 +161,7 @@ export function CommunicationNotesPanel({
       setEditingNoteId(null);
       await invalidateNotes();
     },
-    onError: (error) => setFormError(getErrorMessage(error))
+    onError: (error) => setFormError(getApiErrorMessage(error))
   });
 
   const deleteMutation = useMutation({
@@ -176,7 +170,7 @@ export function CommunicationNotesPanel({
       setMutationError(null);
       await invalidateNotes();
     },
-    onError: (error) => setMutationError(getErrorMessage(error))
+    onError: (error) => setMutationError(getApiErrorMessage(error))
   });
 
   async function handleCreate(values: NoteFormValues) {
@@ -243,12 +237,12 @@ export function CommunicationNotesPanel({
       ) : null}
 
       {notesQuery.isLoading ? (
-        <p className="text-sm text-muted-foreground">Загружаем коммуникации...</p>
+        <PanelLoading text="Загружаем историю коммуникаций..." />
       ) : null}
 
       {notesQuery.isError ? (
         <Alert variant="destructive">
-          <AlertDescription>{getErrorMessage(notesQuery.error)}</AlertDescription>
+          <AlertDescription>{getApiErrorMessage(notesQuery.error)}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -298,6 +292,15 @@ export function CommunicationNotesPanel({
       ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+function PanelLoading({ text }: { text: string }) {
+  return (
+    <div className="rounded-md border bg-background p-4">
+      <Skeleton className="h-4 w-44" />
+      <p className="mt-3 text-sm text-muted-foreground">{text}</p>
+    </div>
   );
 }
 

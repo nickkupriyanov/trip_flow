@@ -70,7 +70,7 @@ export function NextQuestionsPanel({
       <CardContent className="p-5">
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h3 className="text-lg font-semibold">AI-вопросы для уточнения</h3>
+            <h3 className="text-lg font-semibold">Вопросы для уточнения</h3>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               Сформируйте черновик следующего сообщения клиенту по данным заявки.
             </p>
@@ -132,7 +132,7 @@ export function NextQuestionsPanel({
 
         {!draft && !generateMutation.isPending && !generateMutation.isError ? (
           <p className="mt-4 rounded-md border border-dashed bg-background px-3 py-4 text-sm leading-6 text-muted-foreground">
-            Черновика пока нет. AI предложит только вопросы, которые помогают
+            Черновика пока нет. Помощник предложит только вопросы, которые помогают
             уточнить заявку перед подбором или предложением.
           </p>
         ) : null}

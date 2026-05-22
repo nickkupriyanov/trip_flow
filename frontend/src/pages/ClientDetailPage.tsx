@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -19,7 +20,6 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import {
-  ApiError,
   createTravelRequest,
   deleteClient,
   fetchClient,
@@ -35,6 +35,7 @@ import {
   type TravelRequest,
   type TravelRequestInput
 } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/errors";
 import { formatRequestMeta } from "@/lib/formatters";
 import { ClientForm } from "@/pages/components/ClientForm";
 import { CommunicationNotesPanel } from "@/pages/components/CommunicationNotesPanel";
@@ -57,13 +58,6 @@ const preferenceSchema = z.object({
 });
 
 type PreferenceFormValues = z.infer<typeof preferenceSchema>;
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  return "Не удалось выполнить действие. Попробуйте ещё раз.";
-}
 
 function listToText(values: string[] | undefined): string {
   return values?.join(", ") ?? "";
@@ -111,7 +105,7 @@ export function ClientDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ["client", clientId] });
       await queryClient.invalidateQueries({ queryKey: ["clients"] });
     },
-    onError: (error) => setClientError(getErrorMessage(error))
+    onError: (error) => setClientError(getApiErrorMessage(error))
   });
 
   const deleteMutation = useMutation({
@@ -147,7 +141,7 @@ export function ClientDetailPage() {
         <Link className="text-sm font-medium text-primary" to="/clients">
           Назад к клиентам
         </Link>
-        <ErrorState message={getErrorMessage(clientQuery.error)} />
+        <ErrorState message={getApiErrorMessage(clientQuery.error)} />
       </section>
     );
   }
@@ -194,7 +188,7 @@ export function ClientDetailPage() {
       </div>
 
       {deleteMutation.isError ? (
-        <ErrorState message={getErrorMessage(deleteMutation.error)} />
+        <ErrorState message={getApiErrorMessage(deleteMutation.error)} />
       ) : null}
 
       {isEditingClient ? (
@@ -219,7 +213,7 @@ export function ClientDetailPage() {
 
       <PreferencePanel
         clientId={client.id}
-        error={preferencesQuery.isError ? getErrorMessage(preferencesQuery.error) : null}
+        error={preferencesQuery.isError ? getApiErrorMessage(preferencesQuery.error) : null}
         isLoading={preferencesQuery.isLoading}
         preferences={preferencesQuery.data ?? null}
         token={token!}
@@ -321,7 +315,7 @@ function PreferencePanel({
       setFormError(null);
       await queryClient.invalidateQueries({ queryKey: ["client-preferences", clientId] });
     },
-    onError: (mutationError) => setFormError(getErrorMessage(mutationError))
+    onError: (mutationError) => setFormError(getApiErrorMessage(mutationError))
   });
 
   function handleSubmit(values: PreferenceFormValues) {
@@ -354,7 +348,7 @@ function PreferencePanel({
       <CardContent>
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Загружаем предпочтения...</p>
+        <PanelLoading text="Загружаем предпочтения..." />
       ) : null}
 
       {error ? (
@@ -408,7 +402,7 @@ function PreferencePanel({
             </FormField>
             <FormField label="Питание">
               <Input
-                placeholder="AI, завтраки"
+                placeholder="All inclusive, завтраки"
                 {...form.register("mealPreferencesText")}
               />
             </FormField>
@@ -480,7 +474,7 @@ function RequestsPanel({ clientId, token }: { clientId: string; token: string })
       await queryClient.invalidateQueries({ queryKey: ["client-requests", clientId] });
       navigate(`/requests/${request.id}`);
     },
-    onError: (error) => setFormError(getErrorMessage(error))
+    onError: (error) => setFormError(getApiErrorMessage(error))
   });
 
   async function handleCreate(payload: TravelRequestInput) {
@@ -523,12 +517,12 @@ function RequestsPanel({ clientId, token }: { clientId: string; token: string })
       ) : null}
 
       {requestsQuery.isLoading ? (
-        <p className="text-sm text-muted-foreground">Загружаем заявки...</p>
+        <PanelLoading text="Загружаем заявки..." />
       ) : null}
 
       {requestsQuery.isError ? (
         <Alert variant="destructive">
-          <AlertDescription>{getErrorMessage(requestsQuery.error)}</AlertDescription>
+          <AlertDescription>{getApiErrorMessage(requestsQuery.error)}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -573,6 +567,15 @@ function RequestCard({ request }: { request: TravelRequest }) {
       ) : null}
       </Link>
     </Card>
+  );
+}
+
+function PanelLoading({ text }: { text: string }) {
+  return (
+    <div className="rounded-md border bg-background p-4">
+      <Skeleton className="h-4 w-44" />
+      <p className="mt-3 text-sm text-muted-foreground">{text}</p>
+    </div>
   );
 }
 
