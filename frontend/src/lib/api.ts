@@ -200,7 +200,9 @@ export type ImportTourOptionsInput = {
 
 export type ImportTourOptionsOutput = {
   createdCount: number;
+  skippedCount: number;
   options: TourOption[];
+  skippedOptions: TourOption[];
 };
 
 export type ProposalFormat = "telegram" | "whatsapp" | "email";
@@ -306,8 +308,16 @@ export type ReminderFilters = {
   requestId?: string;
 };
 
+type ApiErrorDetail =
+  | string
+  | Array<{
+      loc?: Array<number | string>;
+      msg?: string;
+      type?: string;
+    }>;
+
 type ApiErrorBody = {
-  detail?: string;
+  detail?: ApiErrorDetail;
 };
 
 export class ApiError extends Error {
@@ -323,8 +333,31 @@ export class ApiError extends Error {
 async function parseError(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as ApiErrorBody;
-    return body.detail ?? "Не удалось выполнить запрос";
+    if (typeof body.detail === "string") {
+      return body.detail;
+    }
+    if (Array.isArray(body.detail)) {
+      const messages = body.detail
+        .map((item) => item.msg)
+        .filter((message): message is string => Boolean(message));
+      if (messages.length > 0) {
+        return messages.join("; ");
+      }
+    }
+    if (response.status === 401) {
+      return "Сессия истекла. Войдите снова.";
+    }
+    if (response.status === 404) {
+      return "Запись не найдена или у вас нет доступа.";
+    }
+    if (response.status >= 500) {
+      return "Сервис временно недоступен. Попробуйте позже.";
+    }
+    return "Не удалось выполнить запрос";
   } catch {
+    if (response.status >= 500) {
+      return "Сервис временно недоступен. Попробуйте позже.";
+    }
     return "Не удалось выполнить запрос";
   }
 }
@@ -343,10 +376,18 @@ export async function apiRequest<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers,
+    });
+  } catch {
+    throw new ApiError(
+      "Не удалось связаться с сервером. Проверьте, что TripFlow запущен.",
+      0,
+    );
+  }
 
   if (!response.ok) {
     throw new ApiError(await parseError(response), response.status);

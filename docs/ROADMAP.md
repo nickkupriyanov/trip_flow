@@ -1,81 +1,62 @@
 # Roadmap
 
-## 1. Project Scaffold
+TripFlow остается узкой CRM для индивидуального турагента. Следующие шаги должны усиливать маршрут:
 
-- Create frontend app with React, TypeScript, and Vite.
-- Create backend app with FastAPI.
-- Add Docker Compose with PostgreSQL.
-- Add `.env.example`.
-- Add base app layout.
+```text
+Клиент -> Заявка -> Варианты тура -> Предложение -> Follow-up -> Бронь / Отказ
+```
 
-## 2. Auth
+## MVP status
 
-- Add user model and migrations.
-- Add register, login, and current user endpoints.
-- Add JWT auth.
-- Protect frontend routes.
+Базовый demo-flow уже собран:
 
-## 3. Clients
+- auth и user-scoped backend;
+- клиенты, предпочтения и история коммуникаций;
+- заявки на путешествия и доска статусов;
+- варианты тура, включая импорт из Qui-Quo;
+- ручной builder предложений и копирование текста;
+- генерация редактируемых черновиков;
+- напоминания и дашборд на день;
+- Docker Compose, demo seed и README.
 
-- Add `Client` model, schemas, and API.
-- Add client list, search, create, edit, and delete.
-- Add client detail page.
-- Add user-scoped queries.
+## Next polish
 
-## 4. Travel Requests
+- Довести пустые, loading и error состояния до единого визуального языка на всех рабочих экранах.
+- Продолжить mobile/tablet QA для ключевого demo-маршрута.
+- Улучшить copy в местах, где агенту нужно понять следующий шаг без технических терминов.
+- Добавить больше ручных smoke-сценариев в README и держать screenshots актуальными.
 
-- Add `TravelRequest` model, schemas, and API.
-- Create requests from client detail.
-- Add request detail page.
-- Add travel fields, wishes, restrictions, and internal comment.
+## Import improvements
 
-## 5. Pipeline
+- Сохранять понятный результат повторного Qui-Quo импорта: сколько вариантов добавлено и сколько уже было в заявке.
+- Добавить более заметные подсказки для неподдерживаемых или пустых подборок.
+- Оставить импорт вспомогательным инструментом: агент всегда проверяет вариант перед отправкой клиенту.
 
-- Add pipeline API grouped by request status.
-- Add Kanban board.
-- Add request cards.
-- Support status updates and drag-and-drop.
+## AI quality
 
-## 6. Tour Options
+- Улучшать генерацию proposal text, next questions и коротких сообщений без автосохранения и автоотправки.
+- Сделать подсказки к генерации более привязанными к данным заявки и предпочтениям клиента.
+- Продолжать сохранять AI-generated text только как редактируемый черновик.
 
-- Add `TourOption` model, schemas, and API.
-- Add CRUD inside request detail.
-- Support pros, cons, price, link, and agent comment.
-- Allow one recommended option per request.
+## Reminder ergonomics
 
-## 7. Manual Proposal Builder
+- Упростить создание follow-up из карточки заявки после отправки предложения.
+- Добавить быстрые фильтры “сегодня”, “просрочено”, “после отправки предложения”.
+- Улучшить связь напоминаний с клиентом и заявкой на дашборде.
 
-- Add `Proposal` model, schemas, and API.
-- Add editable proposal builder.
-- Add preview.
-- Add copy-to-clipboard for Telegram / WhatsApp text.
+## Dashboard refinements
 
-## 8. AI Generation
+- Сделать дашборд еще ближе к утреннему рабочему экрану агента.
+- Подсветить заявки без следующего действия.
+- Улучшить компактную доску активных заявок без превращения продукта в аналитику.
 
-- Add AI service behind environment-based API keys.
-- Generate editable proposal text.
-- Generate short messages, client summary, next questions, and rewrites.
-- Save AI attempts as `GenerationTask`.
+## Not planned for MVP
 
-## 9. Reminders
-
-- Add `Reminder` model, schemas, and API.
-- Link reminders to clients and optional requests.
-- Add today and overdue lists.
-- Add mark-as-done action.
-
-## 10. Dashboard
-
-- Show today's reminders.
-- Show new requests.
-- Show requests in progress.
-- Show recent clients.
-- Keep widgets focused on daily agent work.
-
-## 11. Polish
-
-- Add useful empty states.
-- Add loading and error states.
-- Add demo seed data.
-- Add screenshots to README.
-- Verify Docker Compose startup.
+- платежи;
+- интеграции с туроператорами;
+- онлайн-бронирование;
+- командные роли;
+- WhatsApp Business API;
+- PDF builder;
+- сложная аналитика;
+- мобильное приложение.

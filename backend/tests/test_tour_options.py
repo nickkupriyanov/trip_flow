@@ -431,6 +431,8 @@ def test_import_tour_options_creates_all_parsed_options(
     assert response.status_code == 201
     body = response.json()
     assert body["createdCount"] == 2
+    assert body["skippedCount"] == 0
+    assert body["skippedOptions"] == []
     assert [item["title"] for item in body["options"]] == [
         "Hampton By Hilton Marjan Island",
         "Fairmont Fujairah Beach Resort",
@@ -438,6 +440,46 @@ def test_import_tour_options_creates_all_parsed_options(
     assert body["options"][0]["requestId"] == request["id"]
     assert body["options"][0]["price"] == 225120
     assert body["options"][0]["isRecommended"] is False
+
+    list_response = client.get(f"/requests/{request['id']}/options", headers=headers)
+    assert list_response.status_code == 200
+    assert len(list_response.json()) == 2
+
+
+def test_import_tour_options_skips_existing_options_by_link(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    headers = auth_headers(client)
+    created_client = create_client(client, headers)
+    request = create_request(client, headers, str(created_client["id"]))
+
+    def fake_fetch(url: str) -> str:
+        return QUI_QUO_HTML
+
+    monkeypatch.setattr("app.api.tour_options.fetch_qui_quo_html", fake_fetch)
+
+    first_response = client.post(
+        f"/requests/{request['id']}/options/import",
+        headers=headers,
+        json={"url": "https://qui-quo.ru/CZ22-SU39"},
+    )
+    second_response = client.post(
+        f"/requests/{request['id']}/options/import",
+        headers=headers,
+        json={"url": "https://qui-quo.ru/CZ22-SU39"},
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+    body = second_response.json()
+    assert body["createdCount"] == 0
+    assert body["skippedCount"] == 2
+    assert body["options"] == []
+    assert [item["title"] for item in body["skippedOptions"]] == [
+        "Hampton By Hilton Marjan Island",
+        "Fairmont Fujairah Beach Resort",
+    ]
 
     list_response = client.get(f"/requests/{request['id']}/options", headers=headers)
     assert list_response.status_code == 200

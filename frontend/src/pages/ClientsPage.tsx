@@ -16,23 +16,16 @@ import {
   TableRow
 } from "@/components/ui/table";
 import {
-  ApiError,
   createClient,
   fetchClients,
   type ClientInput
 } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/errors";
 import { ClientForm } from "@/pages/components/ClientForm";
 import { EmptyState } from "@/pages/components/EmptyState";
 import { ErrorState, LoadingState } from "@/pages/components/Feedback";
 import { FormField } from "@/pages/components/FormField";
 import { PageHeader } from "@/pages/components/PageHeader";
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  return "Не удалось выполнить действие. Попробуйте ещё раз.";
-}
 
 export function ClientsPage() {
   const { token } = useAuth();
@@ -54,7 +47,7 @@ export function ClientsPage() {
       setIsCreateOpen(false);
       await queryClient.invalidateQueries({ queryKey: ["clients"] });
     },
-    onError: (error) => setFormError(getErrorMessage(error))
+    onError: (error) => setFormError(getApiErrorMessage(error))
   });
 
   const clients = clientsQuery.data ?? [];
@@ -120,7 +113,7 @@ export function ClientsPage() {
       ) : null}
 
       {clientsQuery.isError ? (
-        <ErrorState message={getErrorMessage(clientsQuery.error)} />
+        <ErrorState message={getApiErrorMessage(clientsQuery.error)} />
       ) : null}
 
       {!clientsQuery.isLoading && !clientsQuery.isError && clients.length === 0 ? (
@@ -136,6 +129,7 @@ export function ClientsPage() {
 
       {clients.length > 0 ? (
         <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
           <Table className="min-w-[760px]">
               <TableHeader className="bg-muted/60">
                 <TableRow>
@@ -187,6 +181,7 @@ export function ClientsPage() {
                 ))}
               </TableBody>
             </Table>
+          </div>
         </Card>
       ) : null}
     </section>

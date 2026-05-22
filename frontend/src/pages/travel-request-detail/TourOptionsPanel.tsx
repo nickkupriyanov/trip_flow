@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   createTourOption,
   deleteTourOption,
@@ -27,6 +28,11 @@ import { queryKeys } from "@/lib/queryKeys";
 import { EmptyState } from "@/pages/components/EmptyState";
 import { TourOptionForm } from "@/pages/components/TourOptionForm";
 
+type ImportSummary = {
+  createdCount: number;
+  skippedCount: number;
+};
+
 export function TourOptionsPanel({
   requestId,
   token
@@ -39,7 +45,7 @@ export function TourOptionsPanel({
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [importUrl, setImportUrl] = useState("");
-  const [importSuccessCount, setImportSuccessCount] = useState<number | null>(null);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
 
   const optionsQuery = useQuery({
@@ -88,11 +94,14 @@ export function TourOptionsPanel({
     onSuccess: async (result) => {
       setMutationError(null);
       setImportUrl("");
-      setImportSuccessCount(result.createdCount);
+      setImportSummary({
+        createdCount: result.createdCount,
+        skippedCount: result.skippedCount
+      });
       await queryClient.invalidateQueries({ queryKey: queryKeys.tourOptions(requestId) });
     },
     onError: (error) => {
-      setImportSuccessCount(null);
+      setImportSummary(null);
       setMutationError(getApiErrorMessage(error));
     }
   });
@@ -166,7 +175,7 @@ export function TourOptionsPanel({
                 type="url"
                 value={importUrl}
                 onChange={(event) => {
-                  setImportSuccessCount(null);
+                  setImportSummary(null);
                   setMutationError(null);
                   setImportUrl(event.target.value);
                 }}
@@ -181,9 +190,12 @@ export function TourOptionsPanel({
               Загружаем подборку и создаём варианты тура...
             </p>
           ) : null}
-          {importSuccessCount !== null ? (
+          {importSummary ? (
             <p className="mt-3 text-sm font-medium text-emerald-700">
-              Импортировано вариантов: {importSuccessCount}
+              Добавлено вариантов: {importSummary.createdCount}
+              {importSummary.skippedCount > 0
+                ? `, уже были в заявке: ${importSummary.skippedCount}`
+                : ""}
             </p>
           ) : null}
         </form>
@@ -207,7 +219,7 @@ export function TourOptionsPanel({
         ) : null}
 
         {optionsQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground">Загружаем варианты...</p>
+          <PanelLoading text="Загружаем варианты тура..." />
         ) : null}
 
         {optionsQuery.isError ? (
@@ -258,6 +270,15 @@ export function TourOptionsPanel({
         ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+function PanelLoading({ text }: { text: string }) {
+  return (
+    <div className="rounded-md border bg-background p-4">
+      <Skeleton className="h-4 w-44" />
+      <p className="mt-3 text-sm text-muted-foreground">{text}</p>
+    </div>
   );
 }
 

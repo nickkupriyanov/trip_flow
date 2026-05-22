@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ApiError } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/errors";
 import { FormField } from "@/pages/components/FormField";
 
 const loginSchema = z.object({
@@ -33,13 +33,6 @@ type LocationState = {
     pathname?: string;
   };
 };
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  return "Не удалось войти. Проверьте данные и попробуйте ещё раз.";
-}
 
 export function AuthPage({ mode }: { mode: AuthMode }) {
   const { isAuthenticated, login, register } = useAuth();
@@ -70,7 +63,9 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
       await login(values);
       navigate(redirectTo, { replace: true });
     } catch (error) {
-      setFormError(getErrorMessage(error));
+      setFormError(
+        getApiErrorMessage(error, "Не удалось войти. Проверьте данные и попробуйте ещё раз."),
+      );
     }
   }
 
@@ -80,7 +75,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
       await register(values);
       navigate("/dashboard", { replace: true });
     } catch (error) {
-      setFormError(getErrorMessage(error));
+      setFormError(getApiErrorMessage(error));
     }
   }
 
@@ -137,7 +132,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 {isRegister
                   ? "Заведите рабочее пространство перед добавлением клиентов."
-                  : "Продолжите работу с клиентами, заявками и pipeline."}
+                  : "Продолжите работу с клиентами, заявками и напоминаниями."}
               </p>
             </div>
 

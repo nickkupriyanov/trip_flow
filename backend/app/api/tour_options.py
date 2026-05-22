@@ -27,6 +27,7 @@ from app.services.tour_options import (
     delete_tour_option,
     get_tour_option,
     list_tour_options,
+    split_new_import_options,
     update_tour_option,
 )
 
@@ -99,8 +100,17 @@ def import_request_options(
             detail=str(exc),
         ) from exc
 
-    options = create_tour_options(db, request=request, payloads=option_payloads)
-    return TourOptionImportResult(created_count=len(options), options=options)
+    new_payloads, skipped_options = split_new_import_options(
+        list_tour_options(db, request=request),
+        option_payloads,
+    )
+    options = create_tour_options(db, request=request, payloads=new_payloads)
+    return TourOptionImportResult(
+        created_count=len(options),
+        skipped_count=len(skipped_options),
+        options=options,
+        skipped_options=skipped_options,
+    )
 
 
 @router.patch("/options/{option_id}", response_model=TourOptionRead)

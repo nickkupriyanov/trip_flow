@@ -130,4 +130,6 @@ class TourOptionRead(TourOptionBase):
 
 class TourOptionImportResult(CamelModel):
     created_count: int
+    skipped_count: int
     options: list[TourOptionRead]
+    skipped_options: list[TourOptionRead]

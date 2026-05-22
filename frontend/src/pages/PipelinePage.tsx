@@ -136,8 +136,8 @@ export function PipelinePage() {
     <section className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <PageHeader
-          title="Pipeline"
-          description="Ежедневная доска заявок: от первого уточнения до брони или отказа."
+          title="Доска заявок"
+          description="Ежедневная воронка: от первого уточнения до брони или отказа."
         />
         <Card className="px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
@@ -152,7 +152,7 @@ export function PipelinePage() {
       ) : null}
 
       {pipelineQuery.isLoading ? (
-        <LoadingState text="Загружаем pipeline..." />
+        <LoadingState text="Загружаем доску заявок..." />
       ) : null}
 
       {pipelineQuery.isError ? (
@@ -161,7 +161,7 @@ export function PipelinePage() {
 
       {!pipelineQuery.isLoading && !pipelineQuery.isError && totalRequests === 0 ? (
         <EmptyState
-          title="В pipeline пока нет заявок"
+          title="На доске пока нет заявок"
           description="Создайте заявку в карточке клиента, и она появится в колонке «Новая»."
         />
       ) : null}

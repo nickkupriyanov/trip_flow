@@ -76,6 +76,27 @@ def create_tour_options(
     return options
 
 
+def split_new_import_options(
+    existing_options: list[TourOption],
+    payloads: list[TourOptionCreate],
+) -> tuple[list[TourOptionCreate], list[TourOption]]:
+    existing_by_link = {
+        option.link: option
+        for option in existing_options
+        if option.link is not None
+    }
+    new_payloads: list[TourOptionCreate] = []
+    skipped_options: list[TourOption] = []
+
+    for payload in payloads:
+        if payload.link is not None and payload.link in existing_by_link:
+            skipped_options.append(existing_by_link[payload.link])
+        else:
+            new_payloads.append(payload)
+
+    return new_payloads, skipped_options
+
+
 def update_tour_option(
     db: Session,
     *,

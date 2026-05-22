@@ -117,7 +117,7 @@ export function ProposalForm({
         </TabsList>
         <TabsContent value="edit">
           <Card className="bg-background p-4 text-sm text-muted-foreground">
-            AI-текст остается черновиком: сохраните только после ручной проверки.
+            Сгенерированный текст остается черновиком: сохраните только после ручной проверки.
           </Card>
         </TabsContent>
         <TabsContent value="preview">
